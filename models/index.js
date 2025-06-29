@@ -18,14 +18,19 @@ fs.readdirSync(__dirname)
         (file) =>
             file.indexOf(".") !== 0 &&
             file !== basename &&
-            file.slice(-3) === ".js"
+            file.slice(-3) === ".js" &&
+            fs.statSync(path.join(__dirname, file)).isFile()
     )
     .forEach((file) => {
-        const model = require(path.join(__dirname, file))(
-            sequelize,
-            Sequelize.DataTypes
-        );
-        db[model.name] = model;
+        try {
+            const model = require(path.join(__dirname, file));
+            if (typeof model === 'function') {
+                const modelInstance = model(sequelize, Sequelize.DataTypes);
+                db[modelInstance.name] = modelInstance;
+            }
+        } catch (error) {
+            console.warn(`Warning: Could not load model from file ${file}:`, error.message);
+        }
     });
 
 Object.keys(db).forEach((modelName) => {

@@ -20,15 +20,12 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-    origin: [
-        process.env.FRONTEND_URL || "http://localhost:8080",
-        "http://localhost:8081",
-        "http://localhost:8082",
-        // Add mobile app origins
-        "http://localhost:3000",
-        "http://192.168.1.100:3000", // Example local network IP for mobile testing
-    ],
+    origin: process.env.NODE_ENV === 'production' 
+        ? [process.env.FRONTEND_URL].filter(Boolean)  // In production, only allow configured URLs
+        : true, // In development, allow all origins
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     optionsSuccessStatus: 200,
 };
 

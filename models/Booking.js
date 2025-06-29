@@ -7,10 +7,10 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
                 autoIncrement: true,
             },
-            user_id: {
+            customer_id: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
-                references: { model: "users", key: "id" },
+                references: { model: "customers", key: "id" },
             },
             trek_id: {
                 type: DataTypes.INTEGER,
@@ -37,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 references: { model: "coupons", key: "id" },
             },
-            total_participants: {
+            total_travelers: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 1,
@@ -58,6 +58,7 @@ module.exports = (sequelize, DataTypes) => {
             payment_status: {
                 type: DataTypes.ENUM(
                     "pending",
+                    "partial",
                     "completed",
                     "failed",
                     "refunded"
@@ -81,6 +82,15 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            booking_source: {
+                type: DataTypes.ENUM("web", "mobile", "phone", "walk_in"),
+                defaultValue: "web",
+            },
+            primary_contact_traveler_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: { model: "travelers", key: "id" },
+            },
         },
         {
             tableName: "bookings",
@@ -89,7 +99,10 @@ module.exports = (sequelize, DataTypes) => {
     );
 
     Booking.associate = (models) => {
-        Booking.belongsTo(models.User, { foreignKey: "user_id", as: "user" });
+        Booking.belongsTo(models.Customer, {
+            foreignKey: "customer_id",
+            as: "customer",
+        });
         Booking.belongsTo(models.Trek, { foreignKey: "trek_id", as: "trek" });
         Booking.belongsTo(models.Vendor, {
             foreignKey: "vendor_id",
@@ -107,9 +120,13 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: "coupon_id",
             as: "coupon",
         });
-        Booking.hasMany(models.BookingParticipant, {
+        Booking.belongsTo(models.Traveler, {
+            foreignKey: "primary_contact_traveler_id",
+            as: "primaryContact",
+        });
+        Booking.hasMany(models.BookingTraveler, {
             foreignKey: "booking_id",
-            as: "participants",
+            as: "travelers",
         });
         Booking.hasMany(models.PaymentLog, {
             foreignKey: "booking_id",
@@ -126,4 +143,4 @@ module.exports = (sequelize, DataTypes) => {
     };
 
     return Booking;
-};
+}; 

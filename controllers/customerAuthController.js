@@ -2,9 +2,6 @@ const { Customer, Traveler } = require("../models");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
-// In-memory store for OTP (in production, use Redis)
-const otpStore = new Map();
-
 // Generate 6-digit OTP
 const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -38,14 +35,37 @@ const requestOTP = async (req, res) => {
             });
         }
 
+        // Find or initialize customer
+        let customer = await Customer.findOne({ where: { phone } });
+        
+        if (!customer) {
+            customer = await Customer.create({
+                phone,
+                verification_status: "pending",
+            });
+        }
+
+        // Check if previous OTP is still valid and attempts are within limit
+        if (
+            customer.otp_expires_at &&
+            new Date() < customer.otp_expires_at &&
+            customer.otp_attempts >= 3
+        ) {
+            const waitTime = Math.ceil((customer.otp_expires_at - new Date()) / 1000 / 60);
+            return res.status(429).json({
+                success: false,
+                message: `Too many attempts. Please wait ${waitTime} minutes before requesting a new OTP`,
+            });
+        }
+
         const otp = generateOTP();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-        // Store OTP
-        otpStore.set(phone, {
-            otp,
-            expiresAt,
-            attempts: 0,
+        // Update customer with new OTP
+        await customer.update({
+            otp: otp,
+            otp_expires_at: expiresAt,
+            otp_attempts: 0,
         });
 
         // Send OTP
@@ -77,60 +97,51 @@ const verifyOTP = async (req, res) => {
             });
         }
 
-        const storedOTP = otpStore.get(phone);
+        const customer = await Customer.findOne({ where: { phone } });
 
-        if (!storedOTP) {
+        if (!customer || !customer.otp) {
             return res.status(400).json({
                 success: false,
                 message: "OTP not found or expired",
             });
         }
 
-        if (new Date() > storedOTP.expiresAt) {
-            otpStore.delete(phone);
+        if (new Date() > customer.otp_expires_at) {
+            await customer.update({
+                otp: null,
+                otp_expires_at: null,
+                otp_attempts: 0,
+            });
             return res.status(400).json({
                 success: false,
                 message: "OTP expired",
             });
         }
 
-        if (storedOTP.attempts >= 3) {
-            otpStore.delete(phone);
+        if (customer.otp_attempts >= 3) {
             return res.status(400).json({
                 success: false,
                 message: "Too many failed attempts",
             });
         }
 
-        if (storedOTP.otp !== otp) {
-            storedOTP.attempts++;
+        if (customer.otp !== otp) {
+            await customer.increment('otp_attempts');
             return res.status(400).json({
                 success: false,
                 message: "Invalid OTP",
-                attemptsLeft: 3 - storedOTP.attempts,
+                attemptsLeft: 3 - (customer.otp_attempts + 1),
             });
         }
 
         // OTP verified successfully
-        otpStore.delete(phone);
-
-        // Find or create customer
-        let customer = await Customer.findOne({ where: { phone } });
-        let isNewCustomer = false;
-
-        if (!customer) {
-            customer = await Customer.create({
-                phone,
-                verification_status: "verified",
-            });
-            isNewCustomer = true;
-        } else {
-            // Update last login
-            await customer.update({
-                last_login: new Date(),
-                verification_status: "verified",
-            });
-        }
+        await customer.update({
+            otp: null,
+            otp_expires_at: null,
+            otp_attempts: 0,
+            verification_status: "verified",
+            last_login: new Date(),
+        });
 
         // Generate JWT token
         const token = jwt.sign(
@@ -145,16 +156,14 @@ const verifyOTP = async (req, res) => {
 
         res.json({
             success: true,
-            message: isNewCustomer
-                ? "Account created successfully"
-                : "Login successful",
+            message: customer.profile_completed ? "Login successful" : "Account created successfully",
             customer: {
                 id: customer.id,
                 phone: customer.phone,
                 name: customer.name,
                 email: customer.email,
                 profileCompleted: customer.profile_completed,
-                isNewCustomer,
+                isNewCustomer: !customer.profile_completed,
             },
             token,
         });
@@ -200,7 +209,7 @@ const completeProfile = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("Error completing profile:", error);
+        console.error("Error updating profile:", error);
         res.status(500).json({
             success: false,
             message: "Failed to update profile",
@@ -238,9 +247,8 @@ const getProfile = async (req, res) => {
                 phone: customer.phone,
                 name: customer.name,
                 email: customer.email,
-                status: customer.status,
                 profileCompleted: customer.profile_completed,
-                travelers: customer.travelers || [],
+                travelers: customer.travelers,
             },
         });
     } catch (error) {

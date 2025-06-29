@@ -421,4 +421,7 @@ module.exports = {
   createBooking,
   getCustomerBookings,
   getBookingDetails,
+  cancelBooking
+};
+
  
