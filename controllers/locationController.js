@@ -30,7 +30,7 @@ const getCities = async (req, res) => {
             where: whereClause,
             limit: parseInt(limit),
             offset: offset,
-            order: [["createdAt", "DESC"]],
+            order: [["created_at", "DESC"]],
         });
 
         // Calculate statistics

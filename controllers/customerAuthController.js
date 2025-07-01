@@ -37,7 +37,7 @@ const requestOTP = async (req, res) => {
 
         // Find or initialize customer
         let customer = await Customer.findOne({ where: { phone } });
-        
+
         if (!customer) {
             customer = await Customer.create({
                 phone,
@@ -51,7 +51,9 @@ const requestOTP = async (req, res) => {
             new Date() < customer.otp_expires_at &&
             customer.otp_attempts >= 3
         ) {
-            const waitTime = Math.ceil((customer.otp_expires_at - new Date()) / 1000 / 60);
+            const waitTime = Math.ceil(
+                (customer.otp_expires_at - new Date()) / 1000 / 60
+            );
             return res.status(429).json({
                 success: false,
                 message: `Too many attempts. Please wait ${waitTime} minutes before requesting a new OTP`,
@@ -73,6 +75,7 @@ const requestOTP = async (req, res) => {
 
         res.json({
             success: true,
+            otp: otp,
             message: "OTP sent successfully",
             expiresIn: 300, // 5 minutes in seconds
         });
@@ -126,7 +129,7 @@ const verifyOTP = async (req, res) => {
         }
 
         if (customer.otp !== otp) {
-            await customer.increment('otp_attempts');
+            await customer.increment("otp_attempts");
             return res.status(400).json({
                 success: false,
                 message: "Invalid OTP",
@@ -156,7 +159,9 @@ const verifyOTP = async (req, res) => {
 
         res.json({
             success: true,
-            message: customer.profile_completed ? "Login successful" : "Account created successfully",
+            message: customer.profile_completed
+                ? "Login successful"
+                : "Account created successfully",
             customer: {
                 id: customer.id,
                 phone: customer.phone,

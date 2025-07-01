@@ -57,9 +57,9 @@ const validateTrek = [
 
 // Public routes (for mobile app - no auth required)
 router.get("/", trekController.getAllPublicTreks); // Get all published treks
-router.get("/:id", trekController.getPublicTrekById); // Get single trek details
-router.get("/category/:categoryId", trekController.getTreksByCategory); // Get treks by category
 router.get("/search", trekController.searchTreks); // Search treks
+router.get("/category/:categoryId", trekController.getTreksByCategory); // Get treks by category
+router.get("/:id", trekController.getPublicTrekById); // Get single trek details
 
 // Vendor routes (require authentication)
 router.get("/vendor/my-treks", authMiddleware, trekController.getVendorTreks);

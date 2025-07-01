@@ -867,7 +867,14 @@ exports.getAllPublicTreks = async (req, res) => {
                 {
                     model: Vendor,
                     as: "vendor",
-                    attributes: ["id", "business_name", "rating"],
+                    attributes: ["id", "status"],
+                    include: [
+                        {
+                            model: require("../models").User,
+                            as: "user",
+                            attributes: ["id", "name", "email", "phone"],
+                        },
+                    ],
                 },
                 {
                     model: TrekImage,
@@ -898,8 +905,8 @@ exports.getAllPublicTreks = async (req, res) => {
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             vendor: {
                 id: trek.vendor.id,
-                name: trek.vendor.business_name,
-                rating: trek.vendor.rating,
+                name: trek.vendor.user?.name || "Unknown Vendor",
+                rating: 4.0, // Default rating since not stored in database
             },
             createdAt: trek.created_at,
         }));
@@ -938,13 +945,13 @@ exports.getPublicTrekById = async (req, res) => {
                 {
                     model: Vendor,
                     as: "vendor",
-                    attributes: [
-                        "id",
-                        "business_name",
-                        "contact_email",
-                        "contact_phone",
-                        "rating",
-                        "description",
+                    attributes: ["id", "status"],
+                    include: [
+                        {
+                            model: require("../models").User,
+                            as: "user",
+                            attributes: ["id", "name", "email", "phone"],
+                        },
                     ],
                 },
                 {
@@ -1018,7 +1025,14 @@ exports.getPublicTrekById = async (req, res) => {
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
-            vendor: trek.vendor,
+            vendor: {
+                id: trek.vendor.id,
+                name: trek.vendor.user?.name || "Unknown Vendor",
+                email: trek.vendor.user?.email || "",
+                phone: trek.vendor.user?.phone || "",
+                rating: 4.0, // Default rating since not stored in database
+                status: trek.vendor.status,
+            },
             createdAt: trek.created_at,
             updatedAt: trek.updated_at,
         };
@@ -1051,7 +1065,14 @@ exports.getTreksByCategory = async (req, res) => {
                 {
                     model: Vendor,
                     as: "vendor",
-                    attributes: ["id", "business_name", "rating"],
+                    attributes: ["id", "status"],
+                    include: [
+                        {
+                            model: require("../models").User,
+                            as: "user",
+                            attributes: ["id", "name", "email", "phone"],
+                        },
+                    ],
                 },
                 {
                     model: TrekImage,
@@ -1075,7 +1096,11 @@ exports.getTreksByCategory = async (req, res) => {
             difficulty: trek.difficulty,
             availableSlots: trek.max_participants - trek.booked_slots,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
-            vendor: trek.vendor,
+            vendor: {
+                id: trek.vendor.id,
+                name: trek.vendor.user?.name || "Unknown Vendor",
+                rating: 4.0, // Default rating since not stored in database
+            },
         }));
 
         res.json({
@@ -1114,9 +1139,9 @@ exports.searchTreks = async (req, res) => {
 
         if (q) {
             whereClause[Op.or] = [
-                { title: { [Op.iLike]: `%${q}%` } },
-                { description: { [Op.iLike]: `%${q}%` } },
-                { destination: { [Op.iLike]: `%${q}%` } },
+                { title: { [Op.like]: `%${q}%` } },
+                { description: { [Op.like]: `%${q}%` } },
+                { destination: { [Op.like]: `%${q}%` } },
             ];
         }
 
@@ -1142,7 +1167,14 @@ exports.searchTreks = async (req, res) => {
                 {
                     model: Vendor,
                     as: "vendor",
-                    attributes: ["id", "business_name", "rating"],
+                    attributes: ["id", "status"],
+                    include: [
+                        {
+                            model: require("../models").User,
+                            as: "user",
+                            attributes: ["id", "name", "email", "phone"],
+                        },
+                    ],
                 },
                 {
                     model: TrekImage,
@@ -1166,7 +1198,11 @@ exports.searchTreks = async (req, res) => {
             difficulty: trek.difficulty,
             availableSlots: trek.max_participants - trek.booked_slots,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
-            vendor: trek.vendor,
+            vendor: {
+                id: trek.vendor.id,
+                name: trek.vendor.user?.name || "Unknown Vendor",
+                rating: 4.0, // Default rating since not stored in database
+            },
         }));
 
         res.json({
