@@ -5,15 +5,12 @@ const path = require("path");
 const { sequelize } = require("./models");
 require("dotenv").config();
 
-// Initialize Firebase Admin SDK
+// Initialize Firebase
 const { initializeFirebase } = require("./config/firebase");
 try {
     initializeFirebase();
 } catch (error) {
-    console.warn("Firebase initialization failed:", error.message);
-    console.warn(
-        "Firebase authentication will not work until configured properly"
-    );
+    console.error("Failed to initialize Firebase:", error);
 }
 
 // Import routes
