@@ -24,17 +24,18 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 unique: true,
             },
-            otp: {
+            firebase_uid: {
                 type: DataTypes.STRING,
                 allowNull: true,
+                unique: true,
             },
-            otp_expires_at: {
-                type: DataTypes.DATE,
+            date_of_birth: {
+                type: DataTypes.DATEONLY,
                 allowNull: true,
             },
-            otp_attempts: {
-                type: DataTypes.INTEGER,
-                defaultValue: 0,
+            emergency_contact: {
+                type: DataTypes.JSON,
+                allowNull: true,
             },
             verification_status: {
                 type: DataTypes.ENUM("pending", "verified"),
@@ -71,4 +72,4 @@ module.exports = (sequelize, DataTypes) => {
     };
 
     return Customer;
-}; 
+};

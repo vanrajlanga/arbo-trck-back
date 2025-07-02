@@ -1,150 +1,60 @@
 const { Customer, Traveler } = require("../models");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
+const { verifyFirebaseToken } = require("../config/firebase");
 
-// Generate 6-digit OTP
-const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Send OTP (mock implementation - integrate with SMS service)
-const sendOTP = async (phone, otp) => {
-    // TODO: Integrate with SMS service (Twilio, AWS SNS, etc.)
-    console.log(`Sending OTP ${otp} to phone ${phone}`);
-    return true;
-};
-
-// Request OTP for phone number
-const requestOTP = async (req, res) => {
+// Verify Firebase ID Token and login/register customer
+const firebaseVerify = async (req, res) => {
     try {
-        const { phone } = req.body;
+        const { firebaseIdToken } = req.body;
+
+        if (!firebaseIdToken) {
+            return res.status(400).json({
+                success: false,
+                message: "Firebase ID token is required",
+            });
+        }
+
+        // Verify Firebase ID token
+        const firebaseResult = await verifyFirebaseToken(firebaseIdToken);
+
+        if (!firebaseResult.success) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid Firebase token",
+                error: firebaseResult.error,
+            });
+        }
+
+        const { phone, email, uid } = firebaseResult;
 
         if (!phone) {
             return res.status(400).json({
                 success: false,
-                message: "Phone number is required",
+                message: "Phone number not found in Firebase token",
             });
         }
 
-        // Validate phone number format
-        const phoneRegex = /^[+]?[1-9]\d{1,14}$/;
-        if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid phone number format",
-            });
-        }
-
-        // Find or initialize customer
+        // Find or create customer
         let customer = await Customer.findOne({ where: { phone } });
 
         if (!customer) {
+            // Create new customer
             customer = await Customer.create({
                 phone,
-                verification_status: "pending",
+                email: email || null,
+                firebase_uid: uid,
+                verification_status: "verified",
+                last_login: new Date(),
             });
-        }
-
-        // Check if previous OTP is still valid and attempts are within limit
-        if (
-            customer.otp_expires_at &&
-            new Date() < customer.otp_expires_at &&
-            customer.otp_attempts >= 3
-        ) {
-            const waitTime = Math.ceil(
-                (customer.otp_expires_at - new Date()) / 1000 / 60
-            );
-            return res.status(429).json({
-                success: false,
-                message: `Too many attempts. Please wait ${waitTime} minutes before requesting a new OTP`,
-            });
-        }
-
-        const otp = generateOTP();
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-        // Update customer with new OTP
-        await customer.update({
-            otp: otp,
-            otp_expires_at: expiresAt,
-            otp_attempts: 0,
-        });
-
-        // Send OTP
-        await sendOTP(phone, otp);
-
-        res.json({
-            success: true,
-            otp: otp,
-            message: "OTP sent successfully",
-            expiresIn: 300, // 5 minutes in seconds
-        });
-    } catch (error) {
-        console.error("Error requesting OTP:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to send OTP",
-        });
-    }
-};
-
-// Verify OTP and login/register customer
-const verifyOTP = async (req, res) => {
-    try {
-        const { phone, otp } = req.body;
-
-        if (!phone || !otp) {
-            return res.status(400).json({
-                success: false,
-                message: "Phone number and OTP are required",
-            });
-        }
-
-        const customer = await Customer.findOne({ where: { phone } });
-
-        if (!customer || !customer.otp) {
-            return res.status(400).json({
-                success: false,
-                message: "OTP not found or expired",
-            });
-        }
-
-        if (new Date() > customer.otp_expires_at) {
+        } else {
+            // Update existing customer
             await customer.update({
-                otp: null,
-                otp_expires_at: null,
-                otp_attempts: 0,
-            });
-            return res.status(400).json({
-                success: false,
-                message: "OTP expired",
+                firebase_uid: uid,
+                email: email || customer.email,
+                verification_status: "verified",
+                last_login: new Date(),
             });
         }
-
-        if (customer.otp_attempts >= 3) {
-            return res.status(400).json({
-                success: false,
-                message: "Too many failed attempts",
-            });
-        }
-
-        if (customer.otp !== otp) {
-            await customer.increment("otp_attempts");
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP",
-                attemptsLeft: 3 - (customer.otp_attempts + 1),
-            });
-        }
-
-        // OTP verified successfully
-        await customer.update({
-            otp: null,
-            otp_expires_at: null,
-            otp_attempts: 0,
-            verification_status: "verified",
-            last_login: new Date(),
-        });
 
         // Generate JWT token
         const token = jwt.sign(
@@ -152,6 +62,7 @@ const verifyOTP = async (req, res) => {
                 id: customer.id,
                 phone: customer.phone,
                 type: "customer",
+                firebase_uid: uid,
             },
             process.env.JWT_SECRET || "your-secret-key",
             { expiresIn: "30d" }
@@ -162,34 +73,54 @@ const verifyOTP = async (req, res) => {
             message: customer.profile_completed
                 ? "Login successful"
                 : "Account created successfully",
-            customer: {
-                id: customer.id,
-                phone: customer.phone,
-                name: customer.name,
-                email: customer.email,
-                profileCompleted: customer.profile_completed,
-                isNewCustomer: !customer.profile_completed,
+            data: {
+                token,
+                customer: {
+                    id: customer.id,
+                    phone: customer.phone,
+                    name: customer.name,
+                    email: customer.email,
+                    profileCompleted: customer.profile_completed,
+                    isNewCustomer: !customer.profile_completed,
+                },
+                expiresIn: "30d",
             },
-            token,
         });
     } catch (error) {
-        console.error("Error verifying OTP:", error);
+        console.error("Error verifying Firebase token:", error);
         res.status(500).json({
             success: false,
-            message: "Failed to verify OTP",
+            message: "Failed to verify Firebase token",
         });
     }
 };
 
-// Complete customer profile
-const completeProfile = async (req, res) => {
+// Update customer profile
+const updateProfile = async (req, res) => {
     try {
-        const { name, email } = req.body;
+        const {
+            firstName,
+            lastName,
+            name,
+            email,
+            dateOfBirth,
+            emergencyContact,
+        } = req.body;
         const customerId = req.customer.id;
 
         const updateData = {};
-        if (name) updateData.name = name;
+
+        // Handle name fields
+        if (firstName && lastName) {
+            updateData.name = `${firstName} ${lastName}`;
+        } else if (name) {
+            updateData.name = name;
+        }
+
         if (email) updateData.email = email;
+        if (dateOfBirth) updateData.date_of_birth = dateOfBirth;
+        if (emergencyContact) updateData.emergency_contact = emergencyContact;
+
         updateData.profile_completed = true;
 
         const customer = await Customer.findByPk(customerId);
@@ -205,12 +136,16 @@ const completeProfile = async (req, res) => {
         res.json({
             success: true,
             message: "Profile updated successfully",
-            customer: {
-                id: customer.id,
-                phone: customer.phone,
-                name: customer.name,
-                email: customer.email,
-                profileCompleted: customer.profile_completed,
+            data: {
+                customer: {
+                    id: customer.id,
+                    phone: customer.phone,
+                    name: customer.name,
+                    email: customer.email,
+                    dateOfBirth: customer.date_of_birth,
+                    emergencyContact: customer.emergency_contact,
+                    profileCompleted: customer.profile_completed,
+                },
             },
         });
     } catch (error) {
@@ -248,12 +183,16 @@ const getProfile = async (req, res) => {
         res.json({
             success: true,
             data: {
-                id: customer.id,
-                phone: customer.phone,
-                name: customer.name,
-                email: customer.email,
-                profileCompleted: customer.profile_completed,
-                travelers: customer.travelers,
+                customer: {
+                    id: customer.id,
+                    phone: customer.phone,
+                    name: customer.name,
+                    email: customer.email,
+                    dateOfBirth: customer.date_of_birth,
+                    emergencyContact: customer.emergency_contact,
+                    profileCompleted: customer.profile_completed,
+                    travelers: customer.travelers,
+                },
             },
         });
     } catch (error) {
@@ -266,8 +205,7 @@ const getProfile = async (req, res) => {
 };
 
 module.exports = {
-    requestOTP,
-    verifyOTP,
-    completeProfile,
+    firebaseVerify,
+    updateProfile,
     getProfile,
 };

@@ -6,7 +6,7 @@ This document provides **VERIFIED AND TESTED** API documentation for the Arobo T
 
 **Base URL**: `http://localhost:5000/api/v1` (Development)
 **API Version**: v1.0.0
-**Authentication**: Phone-based OTP + JWT Token
+**Authentication**: Firebase Authentication + JWT Token
 
 ---
 
@@ -16,10 +16,9 @@ This document provides **VERIFIED AND TESTED** API documentation for the Arobo T
 
 -   **GET** `/api/v1` - API version and endpoints info ✅
 
-### 🔐 Customer Authentication (`/api/v1/customer/auth`)
+### 🔐 Customer Authentication (`/api/v1/customer/auth`) - Firebase Based
 
--   **POST** `/api/v1/customer/auth/request-otp` - Request OTP ✅
--   **POST** `/api/v1/customer/auth/verify-otp` - Verify OTP and get JWT ✅
+-   **POST** `/api/v1/customer/auth/firebase-verify` - Verify Firebase ID token and get JWT ✅
 -   **GET** `/api/v1/customer/auth/profile` - Get profile (requires JWT) ✅
 -   **PUT** `/api/v1/customer/auth/profile` - Update profile (requires JWT) ✅
 
@@ -52,14 +51,25 @@ This document provides **VERIFIED AND TESTED** API documentation for the Arobo T
 
 ---
 
-## 🔐 Authentication System
+## 🔐 Firebase Authentication System
 
-### Phone-Based Authentication Flow
+### Authentication Flow
 
-1. **Request OTP** using phone number
-2. **Verify OTP** to get JWT token
-3. **Use JWT token** for all subsequent authenticated requests
-4. **Complete profile** setup (required before booking)
+**NEW: Firebase-Based Authentication**
+
+1. **Client Side (Android App)**:
+    - Use Firebase SDK to send OTP to phone number
+    - User enters OTP in the app
+    - Firebase verifies OTP and provides Firebase ID Token
+2. **Backend Verification**:
+
+    - Send Firebase ID Token to backend
+    - Backend verifies token with Firebase Admin SDK
+    - Backend returns JWT token for subsequent API calls
+
+3. **Protected API Access**:
+    - Use JWT token for all authenticated endpoints
+    - Token is valid for 30 days
 
 ### Authentication Header Format
 
@@ -73,11 +83,11 @@ Authorization: Bearer <jwt_token>
 
 ## 📱 CORRECT API Usage Examples
 
-### 1. Customer Authentication
+### 1. Firebase Authentication
 
-#### 1.1 Request OTP ✅
+#### 1.1 Verify Firebase ID Token ✅
 
-**Endpoint**: `POST /api/v1/customer/auth/request-otp`
+**Endpoint**: `POST /api/v1/customer/auth/firebase-verify`
 **Authentication**: None required
 
 **CORRECT cURL Example**:
@@ -85,58 +95,15 @@ Authorization: Bearer <jwt_token>
 ```bash
 curl -X POST \
   -H "Content-Type: application/json" \
-  -d '{"phone":"+919898933987","countryCode":"+91"}' \
-  http://localhost:5000/api/v1/customer/auth/request-otp
+  -d '{"firebaseIdToken":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjU..."}' \
+  http://localhost:5000/api/v1/customer/auth/firebase-verify
 ```
 
 **Request Body**:
 
 ```json
 {
-    "phone": "+919898933987",
-    "countryCode": "+91"
-}
-```
-
-**Response**:
-
-```json
-{
-    "success": true,
-    "message": "OTP sent successfully",
-    "expiresIn": 300
-}
-```
-
-**⚠️ WRONG Example (causes 404)**:
-
-```bash
-# DON'T USE GET METHOD:
-curl --request GET 'http://localhost:5000/api/v1/customer/auth/request-otp'
-
-# DON'T USE FORM DATA:
-curl --form 'phone="9898933987"' --form 'countryCode="+91"'
-```
-
-#### 1.2 Verify OTP ✅
-
-**Endpoint**: `POST /api/v1/customer/auth/verify-otp`
-
-**CORRECT cURL Example**:
-
-```bash
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"phone":"+919898933987","otp":"123456"}' \
-  http://localhost:5000/api/v1/customer/auth/verify-otp
-```
-
-**Request Body**:
-
-```json
-{
-    "phone": "+919898933987",
-    "otp": "123456"
+    "firebaseIdToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU..."
 }
 ```
 
@@ -145,15 +112,18 @@ curl -X POST \
 ```json
 {
     "success": true,
-    "message": "OTP verified successfully",
+    "message": "Login successful",
     "data": {
         "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
         "customer": {
             "id": 1,
             "phone": "+919898933987",
-            "isProfileComplete": false
+            "name": "John Doe",
+            "email": "john.doe@example.com",
+            "profileCompleted": true,
+            "isNewCustomer": false
         },
-        "expiresIn": "24h"
+        "expiresIn": "30d"
     }
 }
 ```
@@ -163,12 +133,12 @@ curl -X POST \
 ```json
 {
     "success": false,
-    "message": "Invalid OTP",
-    "attemptsLeft": 2
+    "message": "Invalid Firebase token",
+    "error": "Firebase ID token has expired"
 }
 ```
 
-#### 1.3 Get Profile ✅
+#### 1.2 Get Profile ✅
 
 **Endpoint**: `GET /api/v1/customer/auth/profile`
 **Authentication**: Required
@@ -180,7 +150,31 @@ curl -H "Authorization: Bearer <your_jwt_token>" \
   http://localhost:5000/api/v1/customer/auth/profile
 ```
 
-#### 1.4 Update Profile ✅
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "customer": {
+            "id": 1,
+            "phone": "+919898933987",
+            "name": "John Doe",
+            "email": "john.doe@example.com",
+            "dateOfBirth": "1990-01-15",
+            "emergencyContact": {
+                "name": "Jane Doe",
+                "phone": "+919898933988",
+                "relationship": "Spouse"
+            },
+            "profileCompleted": true,
+            "travelers": []
+        }
+    }
+}
+```
+
+#### 1.3 Update Profile ✅
 
 **Endpoint**: `PUT /api/v1/customer/auth/profile`
 **Authentication**: Required
@@ -203,6 +197,46 @@ curl -X PUT \
     }
   }' \
   http://localhost:5000/api/v1/customer/auth/profile
+```
+
+**Request Body**:
+
+```json
+{
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "dateOfBirth": "1990-01-15",
+    "emergencyContact": {
+        "name": "Jane Doe",
+        "phone": "+919898933988",
+        "relationship": "Spouse"
+    }
+}
+```
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "message": "Profile updated successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "phone": "+919898933987",
+            "name": "John Doe",
+            "email": "john.doe@example.com",
+            "dateOfBirth": "1990-01-15",
+            "emergencyContact": {
+                "name": "Jane Doe",
+                "phone": "+919898933988",
+                "relationship": "Spouse"
+            },
+            "profileCompleted": true
+        }
+    }
+}
 ```
 
 ---
@@ -404,79 +438,89 @@ curl -X POST \
 
 ---
 
-## 🔍 Getting the OTP for Testing
+## 🔧 Firebase Setup Requirements
 
-The OTP is logged to the console when you run the backend server. After calling the request-otp endpoint, check your server terminal to see:
+### Prerequisites
 
+1. **Firebase Project** with Authentication enabled
+2. **Phone authentication** provider enabled
+3. **Firebase Admin SDK** service account key
+4. **Environment variables** configured
+
+### Required Environment Variables
+
+```bash
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_PRIVATE_KEY_ID=your-private-key-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour-private-key\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+FIREBASE_CLIENT_ID=your-client-id
+FIREBASE_CLIENT_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-xxxxx%40your-project.iam.gserviceaccount.com
+FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com/
 ```
-Sending OTP 123456 to phone +919898933987
-```
+
+### Android App Integration
+
+1. **Add Firebase SDK** to Android project
+2. **Configure phone authentication**:
+
+    ```kotlin
+    // Send OTP
+    PhoneAuthProvider.getInstance().verifyPhoneNumber(
+        phoneNumber,
+        60,
+        TimeUnit.SECONDS,
+        this,
+        callbacks
+    )
+
+    // Get ID Token after verification
+    FirebaseAuth.getInstance().currentUser?.getIdToken(true)
+        ?.addOnCompleteListener { task ->
+            val idToken = task.result?.token
+            // Send idToken to backend
+        }
+    ```
 
 ---
 
-## ⚠️ Common Mistakes That Cause 404 Errors
+## ⚠️ Migration from OTP-Based Authentication
 
-### 1. Using Wrong HTTP Method
+### What Changed
 
-```bash
-# ❌ WRONG - Using GET for POST endpoints
-curl --request GET 'http://localhost:5000/api/v1/customer/auth/request-otp'
+**REMOVED Endpoints**:
 
-# ✅ CORRECT - Using POST
-curl -X POST -H "Content-Type: application/json" -d '{"phone":"+919898933987"}' http://localhost:5000/api/v1/customer/auth/request-otp
-```
+-   ❌ `POST /api/v1/customer/auth/request-otp`
+-   ❌ `POST /api/v1/customer/auth/verify-otp`
 
-### 2. Using Form Data Instead of JSON
+**NEW Endpoints**:
 
-```bash
-# ❌ WRONG - Using form data
-curl --form 'phone="9898933987"' http://localhost:5000/api/v1/customer/auth/request-otp
+-   ✅ `POST /api/v1/customer/auth/firebase-verify`
 
-# ✅ CORRECT - Using JSON
-curl -X POST -H "Content-Type: application/json" -d '{"phone":"+919898933987"}' http://localhost:5000/api/v1/customer/auth/request-otp
-```
+**Database Changes**:
 
-### 3. Missing Content-Type Header
+-   Added `firebase_uid` field to customers table
+-   Added `date_of_birth` field for enhanced profiles
+-   Added `emergency_contact` JSON field
+-   Kept existing OTP fields for backward compatibility
 
-```bash
-# ❌ WRONG - Missing Content-Type
-curl -X POST -d '{"phone":"+919898933987"}' http://localhost:5000/api/v1/customer/auth/request-otp
+### Updated Authentication Flow
 
-# ✅ CORRECT - With Content-Type
-curl -X POST -H "Content-Type: application/json" -d '{"phone":"+919898933987"}' http://localhost:5000/api/v1/customer/auth/request-otp
-```
+**Old Flow**:
 
-### 4. Missing Authorization Header for Protected Routes
+1. Client → Backend: Request OTP
+2. Backend → SMS: Send OTP
+3. Client → Backend: Verify OTP
+4. Backend → Client: JWT Token
 
-```bash
-# ❌ WRONG - No auth header
-curl http://localhost:5000/api/v1/customer/travelers
+**New Firebase Flow**:
 
-# ✅ CORRECT - With auth header
-curl -H "Authorization: Bearer <jwt_token>" http://localhost:5000/api/v1/customer/travelers
-```
-
----
-
-## 🔐 Complete Authentication Flow Example
-
-```bash
-# Step 1: Request OTP
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"phone":"+919898933987","countryCode":"+91"}' \
-  http://localhost:5000/api/v1/customer/auth/request-otp
-
-# Step 2: Check server console for OTP, then verify
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"phone":"+919898933987","otp":"123456"}' \
-  http://localhost:5000/api/v1/customer/auth/verify-otp
-
-# Step 3: Use the returned JWT token for protected routes
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  http://localhost:5000/api/v1/customer/auth/profile
-```
+1. Client → Firebase: Send OTP (Firebase SDK)
+2. Firebase → SMS: Send OTP
+3. Client → Firebase: Verify OTP (Firebase SDK)
+4. Firebase → Client: Firebase ID Token
+5. Client → Backend: Verify Firebase ID Token
+6. Backend → Client: JWT Token
 
 ---
 
@@ -485,12 +529,12 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
 | Endpoint Category  | Status     | Count  |
 | ------------------ | ---------- | ------ |
 | **API Info**       | ✅ Working | 1      |
-| **Customer Auth**  | ✅ Working | 4      |
+| **Firebase Auth**  | ✅ Working | 3      |
 | **Trek Discovery** | ✅ Working | 4      |
 | **Travelers**      | ✅ Working | 6      |
 | **Bookings**       | ✅ Working | 4      |
 | **Locations**      | ✅ Working | 1      |
-| **Total APIs**     | ✅ Working | **20** |
+| **Total APIs**     | ✅ Working | **19** |
 
 ---
 
@@ -499,6 +543,7 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
 1. **MySQL Server**: Must be running on port 3306
 2. **Node.js Server**: Must be running on port 5000
 3. **Database**: MySQL database named `arobo_trekking`
+4. **Firebase**: Properly configured with environment variables
 
 **Start the servers**:
 
@@ -506,11 +551,41 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
 # Start MySQL (XAMPP)
 sudo /Applications/XAMPP/xamppfiles/bin/mysql.server start
 
+# Run database migration for Firebase fields
+cd backend && npm run migrate
+
+# Install Firebase dependency
+npm install
+
 # Start Node.js server
-cd backend && npm start
+npm start
+```
+
+---
+
+## 🔍 Testing Firebase Authentication
+
+### 1. Get Firebase ID Token
+
+Use Firebase SDK in your Android app to get the ID token after OTP verification.
+
+### 2. Test Backend Verification
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"firebaseIdToken":"<firebase_id_token_from_app>"}' \
+  http://localhost:5000/api/v1/customer/auth/firebase-verify
+```
+
+### 3. Use JWT for Protected Endpoints
+
+```bash
+curl -H "Authorization: Bearer <jwt_token_from_step_2>" \
+  http://localhost:5000/api/v1/customer/auth/profile
 ```
 
 ---
 
 _Last Updated: January 2025_  
-_All endpoints tested and verified working ✅_
+_Firebase Authentication Integration Complete ✅_

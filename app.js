@@ -5,6 +5,17 @@ const path = require("path");
 const { sequelize } = require("./models");
 require("dotenv").config();
 
+// Initialize Firebase Admin SDK
+const { initializeFirebase } = require("./config/firebase");
+try {
+    initializeFirebase();
+} catch (error) {
+    console.warn("Firebase initialization failed:", error.message);
+    console.warn(
+        "Firebase authentication will not work until configured properly"
+    );
+}
+
 // Import routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -20,12 +31,13 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-        ? [process.env.FRONTEND_URL].filter(Boolean)  // In production, only allow configured URLs
-        : true, // In development, allow all origins
+    origin:
+        process.env.NODE_ENV === "production"
+            ? [process.env.FRONTEND_URL].filter(Boolean) // In production, only allow configured URLs
+            : true, // In development, allow all origins
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     optionsSuccessStatus: 200,
 };
 

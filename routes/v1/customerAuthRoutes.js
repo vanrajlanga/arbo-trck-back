@@ -1,9 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const {
-    requestOTP,
-    verifyOTP,
-    completeProfile,
+    firebaseVerify,
+    updateProfile,
     getProfile,
 } = require("../../controllers/customerAuthController");
 const {
@@ -11,11 +10,10 @@ const {
 } = require("../../middleware/customerAuthMiddleware");
 
 // Public routes
-router.post("/request-otp", requestOTP);
-router.post("/verify-otp", verifyOTP);
+router.post("/firebase-verify", firebaseVerify);
 
 // Protected routes
-router.put("/profile", authenticateCustomer, completeProfile);
+router.put("/profile", authenticateCustomer, updateProfile);
 router.get("/profile", authenticateCustomer, getProfile);
 
 module.exports = router;
