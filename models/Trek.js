@@ -24,6 +24,16 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            destination_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: { model: "destinations", key: "id" },
+            },
+            city_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: { model: "cities", key: "id" },
+            },
             duration: {
                 type: DataTypes.STRING,
                 allowNull: true,
@@ -139,6 +149,14 @@ module.exports = (sequelize, DataTypes) => {
         Trek.belongsTo(models.Vendor, {
             foreignKey: "vendor_id",
             as: "vendor",
+        });
+        Trek.belongsTo(models.Destination, {
+            foreignKey: "destination_id",
+            as: "destinationData",
+        });
+        Trek.belongsTo(models.City, {
+            foreignKey: "city_id",
+            as: "city",
         });
         Trek.hasMany(models.Category, {
             foreignKey: "trek_id",

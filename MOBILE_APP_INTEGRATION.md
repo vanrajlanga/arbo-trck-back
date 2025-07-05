@@ -36,7 +36,17 @@ GET /api/v1/treks/:id               # Trek details
 GET /api/v1/treks/category/:id      # By category
 ```
 
-### 3. Traveler Management (Protected)
+### 3. Destination Discovery (Public)
+
+```bash
+GET /api/v1/destinations                    # All destinations
+GET /api/v1/destinations/popular            # Popular destinations
+GET /api/v1/destinations/search?q=query     # Search destinations
+GET /api/v1/destinations/:id                # Destination details
+GET /api/v1/destinations/region/:region     # By region
+```
+
+### 4. Traveler Management (Protected)
 
 ```bash
 GET    /api/v1/customer/travelers     # List travelers
@@ -46,7 +56,7 @@ PUT    /api/v1/customer/travelers/:id # Update traveler
 DELETE /api/v1/customer/travelers/:id # Delete traveler
 ```
 
-### 4. Booking Management (Protected)
+### 5. Booking Management (Protected)
 
 ```bash
 POST /api/v1/customer/bookings           # Create booking
@@ -55,7 +65,7 @@ GET  /api/v1/customer/bookings/:id       # Booking details
 PUT  /api/v1/customer/bookings/:id/cancel # Cancel booking
 ```
 
-### 5. Locations
+### 6. Locations
 
 ```bash
 GET /api/v1/locations/cities  # Available cities
@@ -82,6 +92,10 @@ All APIs tested and working:
 -   ✅ Public Treks: Working
 -   ✅ Trek Search: Working
 -   ✅ Trek Details: Working
+-   ✅ **Destinations: Working**
+-   ✅ **Popular Destinations: Working**
+-   ✅ **Destination Search: Working**
+-   ✅ **Destination by Region: Working**
 -   ✅ Cities: Working
 -   ✅ Protected Routes: Working
 -   ✅ Authentication: Working
@@ -99,6 +113,36 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"firebaseIdToken":"your_firebase_token"}' \
   http://localhost:5000/api/v1/customer/auth/firebase-verify
+```
+
+### Get All Destinations
+
+```bash
+curl http://localhost:5000/api/v1/destinations
+```
+
+### Get Popular Destinations
+
+```bash
+curl http://localhost:5000/api/v1/destinations/popular
+```
+
+### Search Destinations
+
+```bash
+curl "http://localhost:5000/api/v1/destinations/search?q=Kedarnath"
+```
+
+### Get Destinations by Region
+
+```bash
+curl http://localhost:5000/api/v1/destinations/region/North
+```
+
+### Get Destination Details
+
+```bash
+curl http://localhost:5000/api/v1/destinations/1
 ```
 
 ### Get All Treks
@@ -125,6 +169,64 @@ curl -X POST \
 
 ---
 
+## 🎯 Destination API Features
+
+### Filtering Options
+
+All destination endpoints support filtering:
+
+```bash
+# Filter by region
+GET /api/v1/destinations?region=North
+
+# Filter by difficulty
+GET /api/v1/destinations?difficulty=moderate
+
+# Filter by trek type
+GET /api/v1/destinations?trekType=mountain
+
+# Filter popular destinations only
+GET /api/v1/destinations?isPopular=true
+
+# Pagination
+GET /api/v1/destinations?limit=10&offset=0
+```
+
+### Response Format
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Kedarnath",
+            "description": "Sacred Hindu temple dedicated to Lord Shiva",
+            "region": "North",
+            "state": "Uttarakhand",
+            "altitude": 3584,
+            "bestTimeToVisit": ["May", "June", "September", "October"],
+            "difficulty": "moderate",
+            "trekType": "mountain",
+            "isPopular": true,
+            "status": "active",
+            "imageUrl": "https://example.com/image.jpg",
+            "coordinates": { "lat": 30.7346, "lng": 79.0669 },
+            "created_at": "2025-07-05T12:20:22.000Z",
+            "updated_at": "2025-07-05T12:20:22.000Z"
+        }
+    ],
+    "pagination": {
+        "total": 10,
+        "limit": 50,
+        "offset": 0,
+        "hasMore": false
+    }
+}
+```
+
+---
+
 ## 🛠️ Development Setup
 
 1. **Backend Server**: Running on port 5000
@@ -141,5 +243,6 @@ curl -X POST \
 -   JWT token validation is working
 -   Protected routes are secured
 -   Error handling is implemented
+-   **Destination APIs are fully functional**
 
 **Status: ✅ READY FOR MOBILE APP INTEGRATION**

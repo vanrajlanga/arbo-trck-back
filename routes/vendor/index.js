@@ -9,6 +9,7 @@ const bookingRoutes = require("./bookingRoutes");
 const customerRoutes = require("./customerRoutes");
 const locationRoutes = require("./locationRoutes");
 const analyticsRoutes = require("./analyticsRoutes");
+const destinationRoutes = require("./destinationRoutes");
 
 // Apply auth middleware to all vendor routes
 router.use(authMiddleware);
@@ -20,6 +21,7 @@ router.use("/bookings", bookingRoutes);
 router.use("/customers", customerRoutes);
 router.use("/locations", locationRoutes);
 router.use("/analytics", analyticsRoutes);
+router.use("/destinations", destinationRoutes);
 
 // Vendor API info
 router.get("/", (req, res) => {
@@ -34,6 +36,7 @@ router.get("/", (req, res) => {
             customers: "/api/vendor/customers",
             locations: "/api/vendor/locations",
             analytics: "/api/vendor/analytics",
+            destinations: "/api/vendor/destinations",
         },
         authentication: "JWT token required for all endpoints",
     });

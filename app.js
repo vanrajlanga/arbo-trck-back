@@ -116,6 +116,7 @@ app.get("/api", (req, res) => {
                 customer_bookings: "/api/v1/customer/bookings",
                 travelers: "/api/v1/customer/travelers",
                 treks: "/api/v1/treks",
+                destinations: "/api/v1/destinations",
                 locations: "/api/v1/locations",
                 bookings: "/api/v1/bookings",
             },
