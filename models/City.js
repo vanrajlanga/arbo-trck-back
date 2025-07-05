@@ -18,7 +18,14 @@ module.exports = (sequelize, DataTypes) => {
                 field: "state_name",
             },
             region: {
-                type: DataTypes.ENUM("North", "South", "East", "West"),
+                type: DataTypes.ENUM(
+                    "North",
+                    "South",
+                    "East",
+                    "West",
+                    "Central",
+                    "North-East"
+                ),
                 allowNull: false,
                 defaultValue: "North",
             },
@@ -26,6 +33,12 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM("active", "planning", "suspended"),
                 allowNull: false,
                 defaultValue: "planning",
+            },
+            isPopular: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+                field: "is_popular",
             },
             launchDate: {
                 type: DataTypes.DATEONLY,

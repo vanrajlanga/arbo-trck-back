@@ -1,16 +1,20 @@
 const {
     Booking,
-    BookingParticipant,
+    BookingTraveler,
     Trek,
-    User,
+    Customer,
     Vendor,
     PickupPoint,
     Coupon,
     PaymentLog,
     Adjustment,
     Cancellation,
+    sequelize,
+    User,
+    BookingParticipant,
 } = require("../models");
 const { Op } = require("sequelize");
+const logger = require("../utils/logger");
 
 // Create a new booking
 const createBooking = async (req, res) => {
@@ -55,7 +59,7 @@ const createBooking = async (req, res) => {
         }
 
         // Calculate pricing
-        let totalAmount = trek.price * participants.length;
+        let totalAmount = trek.base_price * participants.length;
         let discountAmount = 0;
         let couponId = null;
 
@@ -85,12 +89,12 @@ const createBooking = async (req, res) => {
 
         // Create booking
         const booking = await Booking.create({
-            user_id: userId,
+            customer_id: userId,
             trek_id: trekId,
             vendor_id: trek.vendor_id,
             pickup_point_id: pickupPointId,
             coupon_id: couponId,
-            total_participants: participants.length,
+            total_travelers: participants.length,
             total_amount: totalAmount,
             discount_amount: discountAmount,
             final_amount: finalAmount,
@@ -116,11 +120,10 @@ const createBooking = async (req, res) => {
         const completeBooking = await Booking.findByPk(booking.id, {
             include: [
                 { model: Trek, as: "trek" },
-                { model: User, as: "user" },
+                { model: Customer, as: "customer" },
                 { model: Vendor, as: "vendor" },
                 { model: PickupPoint, as: "pickupPoint" },
                 { model: BookingParticipant, as: "participants" },
-                { model: Coupon, as: "coupon" },
             ],
         });
 
@@ -140,7 +143,7 @@ const getUserBookings = async (req, res) => {
         const userId = req.user.id;
         const { status, page = 1, limit = 10 } = req.query;
 
-        const whereClause = { user_id: userId };
+        const whereClause = { customer_id: userId };
         if (status) {
             whereClause.status = status;
         }
@@ -149,7 +152,7 @@ const getUserBookings = async (req, res) => {
             where: whereClause,
             include: [
                 { model: Trek, as: "trek" },
-                { model: Vendor, as: "vendor" },
+                { model: Customer, as: "customer" },
                 { model: PickupPoint, as: "pickupPoint" },
                 { model: BookingParticipant, as: "participants" },
             ],
@@ -179,14 +182,14 @@ const getBookingById = async (req, res) => {
         const booking = await Booking.findOne({
             where: {
                 id: id,
-                user_id: userId, // Ensure user can only access their own bookings
+                customer_id: userId, // Ensure user can only access their own bookings
             },
             include: [
                 { model: Trek, as: "trek" },
-                { model: User, as: "user" },
+                { model: Customer, as: "customer" },
                 { model: Vendor, as: "vendor" },
                 { model: PickupPoint, as: "pickupPoint" },
-                { model: BookingParticipant, as: "participants" },
+                { model: BookingTraveler, as: "travelers" },
                 { model: Coupon, as: "coupon" },
                 { model: PaymentLog, as: "payments" },
             ],
@@ -213,7 +216,7 @@ const cancelBooking = async (req, res) => {
         const booking = await Booking.findOne({
             where: {
                 id: id,
-                user_id: userId,
+                customer_id: userId,
                 status: { [Op.in]: ["pending", "confirmed"] },
             },
         });
@@ -227,7 +230,7 @@ const cancelBooking = async (req, res) => {
         // Create cancellation record
         await Cancellation.create({
             booking_id: booking.id,
-            user_id: userId,
+            customer_id: userId,
             reason: reason || "User requested cancellation",
             cancelled_at: new Date(),
             refund_amount: booking.final_amount, // Calculate based on cancellation policy
@@ -262,7 +265,7 @@ const updateBooking = async (req, res) => {
         const booking = await Booking.findOne({
             where: {
                 id: id,
-                user_id: userId,
+                customer_id: userId,
                 status: { [Op.in]: ["pending", "confirmed"] },
             },
         });
@@ -285,7 +288,7 @@ const updateBooking = async (req, res) => {
             include: [
                 { model: Trek, as: "trek" },
                 { model: PickupPoint, as: "pickupPoint" },
-                { model: BookingParticipant, as: "participants" },
+                { model: BookingTraveler, as: "travelers" },
             ],
         });
 
@@ -309,7 +312,7 @@ const processPayment = async (req, res) => {
         const booking = await Booking.findOne({
             where: {
                 id: id,
-                user_id: userId,
+                customer_id: userId,
                 status: "pending",
             },
         });
@@ -323,7 +326,7 @@ const processPayment = async (req, res) => {
         // Create payment log
         const payment = await PaymentLog.create({
             booking_id: booking.id,
-            user_id: userId,
+            customer_id: userId,
             amount: amount,
             payment_method: paymentMethod,
             transaction_id: transactionId,
@@ -357,7 +360,7 @@ const getPaymentStatus = async (req, res) => {
         const booking = await Booking.findOne({
             where: {
                 id: id,
-                user_id: userId,
+                customer_id: userId,
             },
             include: [{ model: PaymentLog, as: "payments" }],
         });
@@ -386,14 +389,14 @@ const getBookingConfirmation = async (req, res) => {
         const booking = await Booking.findOne({
             where: {
                 id: id,
-                user_id: userId,
+                customer_id: userId,
                 status: "confirmed",
             },
             include: [
                 { model: Trek, as: "trek" },
                 { model: Vendor, as: "vendor" },
                 { model: PickupPoint, as: "pickupPoint" },
-                { model: BookingParticipant, as: "participants" },
+                { model: BookingTraveler, as: "travelers" },
             ],
         });
 
@@ -410,7 +413,7 @@ const getBookingConfirmation = async (req, res) => {
                     .toString()
                     .padStart(6, "0")}`,
                 trek: booking.trek,
-                participants: booking.participants,
+                travelers: booking.travelers,
                 pickupPoint: booking.pickupPoint,
                 totalAmount: booking.final_amount,
                 bookingDate: booking.booking_date,
@@ -432,13 +435,13 @@ const getBookingInvoice = async (req, res) => {
         const booking = await Booking.findOne({
             where: {
                 id: id,
-                user_id: userId,
+                customer_id: userId,
             },
             include: [
                 { model: Trek, as: "trek" },
-                { model: User, as: "user" },
+                { model: Customer, as: "customer" },
                 { model: Vendor, as: "vendor" },
-                { model: BookingParticipant, as: "participants" },
+                { model: BookingTraveler, as: "travelers" },
                 { model: Coupon, as: "coupon" },
                 { model: PaymentLog, as: "payments" },
             ],
@@ -451,10 +454,10 @@ const getBookingInvoice = async (req, res) => {
         const invoice = {
             invoiceNumber: `INV-${booking.id.toString().padStart(6, "0")}`,
             bookingId: booking.id,
-            customer: booking.user,
+            customer: booking.customer,
             trek: booking.trek,
             vendor: booking.vendor,
-            participants: booking.participants,
+            travelers: booking.travelers,
             pricing: {
                 baseAmount: booking.total_amount,
                 discountAmount: booking.discount_amount,
@@ -475,18 +478,91 @@ const getBookingInvoice = async (req, res) => {
 // Vendor: Get vendor bookings
 const getVendorBookings = async (req, res) => {
     try {
-        const vendorId = req.user.vendor_id || req.user.id; // Adjust based on your user model
-        const { status, page = 1, limit = 10, trekId } = req.query;
+        logger.info("booking", "=== VENDOR BOOKINGS API CALL STARTED ===");
+        logger.info("booking", "Request details:", {
+            method: req.method,
+            url: req.url,
+            headers: {
+                authorization: req.headers.authorization
+                    ? "Bearer [HIDDEN]"
+                    : "No auth header",
+                "user-agent": req.headers["user-agent"],
+            },
+            query: req.query,
+            user: req.user,
+        });
+
+        const vendorId = req.user.vendorId; // Fixed: use vendorId from JWT token
+        const { status, page = 1, limit = 10, trekId, search } = req.query;
+
+        logger.info("booking", "Extracted parameters:", {
+            vendorId,
+            status,
+            page,
+            limit,
+            trekId,
+            search,
+        });
+
+        // Check if vendorId exists
+        if (!vendorId) {
+            logger.error("booking", "Vendor ID is missing from JWT token", {
+                user: req.user,
+                vendorId,
+            });
+            return res.status(403).json({
+                message: "Access denied. Vendor ID not found in token.",
+                debug: { user: req.user },
+            });
+        }
 
         const whereClause = { vendor_id: vendorId };
-        if (status) whereClause.status = status;
-        if (trekId) whereClause.trek_id = trekId;
+
+        // Handle status filter - only add if it's a valid status and not "undefined"
+        if (status && status !== "undefined" && status !== undefined) {
+            whereClause.status = status;
+            logger.info("booking", "Added status filter:", { status });
+        } else {
+            logger.info(
+                "booking",
+                "No status filter applied (status was undefined or invalid)"
+            );
+        }
+
+        if (trekId && trekId !== "undefined") {
+            whereClause.trek_id = trekId;
+            logger.info("booking", "Added trek filter:", { trekId });
+        }
+
+        logger.info("booking", "Final where clause:", whereClause);
+
+        // First, let's check if there are any bookings for this vendor at all
+        const totalBookingsForVendor = await Booking.count({
+            where: { vendor_id: vendorId },
+        });
+
+        logger.info("booking", "Total bookings for vendor (before filters):", {
+            vendorId,
+            totalBookingsForVendor,
+        });
+
+        // Check what statuses exist for this vendor
+        const statusCounts = await Booking.findAll({
+            where: { vendor_id: vendorId },
+            attributes: [
+                "status",
+                [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+            ],
+            group: ["status"],
+        });
+
+        logger.info("booking", "Status distribution for vendor:", statusCounts);
 
         const bookings = await Booking.findAndCountAll({
             where: whereClause,
             include: [
                 { model: Trek, as: "trek" },
-                { model: User, as: "user" },
+                { model: Customer, as: "customer" },
                 { model: PickupPoint, as: "pickupPoint" },
                 { model: BookingParticipant, as: "participants" },
             ],
@@ -495,14 +571,42 @@ const getVendorBookings = async (req, res) => {
             offset: (parseInt(page) - 1) * parseInt(limit),
         });
 
-        res.json({
+        logger.info("booking", "Query results:", {
+            totalCount: bookings.count,
+            returnedRows: bookings.rows.length,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(bookings.count / parseInt(limit)),
+        });
+
+        // Log sample booking data if any found
+        if (bookings.rows.length > 0) {
+            logger.info("booking", "Sample booking data:", {
+                firstBooking: {
+                    id: bookings.rows[0].id,
+                    vendor_id: bookings.rows[0].vendor_id,
+                    status: bookings.rows[0].status,
+                    customer_id: bookings.rows[0].customer_id,
+                    trek_id: bookings.rows[0].trek_id,
+                },
+            });
+        }
+
+        const response = {
             bookings: bookings.rows,
             totalCount: bookings.count,
             currentPage: parseInt(page),
             totalPages: Math.ceil(bookings.count / parseInt(limit)),
-        });
+        };
+
+        logger.info("booking", "=== VENDOR BOOKINGS API CALL COMPLETED ===");
+        res.json(response);
     } catch (error) {
-        console.error("Error fetching vendor bookings:", error);
+        logger.error("booking", "Error fetching vendor bookings:", {
+            error: error.message,
+            stack: error.stack,
+            vendorId: req.user?.vendorId,
+            query: req.query,
+        });
         res.status(500).json({ message: "Failed to fetch vendor bookings" });
     }
 };
@@ -512,7 +616,7 @@ const updateBookingStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        const vendorId = req.user.vendor_id || req.user.id;
+        const vendorId = req.user.vendorId; // Fixed: use vendorId from JWT token
 
         const booking = await Booking.findOne({
             where: {
@@ -532,7 +636,7 @@ const updateBookingStatus = async (req, res) => {
             booking: await Booking.findByPk(booking.id, {
                 include: [
                     { model: Trek, as: "trek" },
-                    { model: User, as: "user" },
+                    { model: Customer, as: "customer" },
                 ],
             }),
         });
@@ -542,11 +646,143 @@ const updateBookingStatus = async (req, res) => {
     }
 };
 
+// Vendor: Create booking for customer
+const createVendorBooking = async (req, res) => {
+    try {
+        const {
+            customerId,
+            trekId,
+            participants,
+            pickupPointId,
+            specialRequests,
+            status = "confirmed",
+            paymentStatus = "completed",
+        } = req.body;
+        const vendorId = req.user.vendorId; // Fixed: use vendorId from JWT token
+
+        // Validate trek exists and belongs to vendor
+        const trek = await Trek.findByPk(trekId, {
+            include: [{ model: Vendor, as: "vendor" }],
+        });
+
+        if (!trek) {
+            return res.status(404).json({ message: "Trek not found" });
+        }
+
+        if (trek.vendor_id !== vendorId) {
+            return res
+                .status(403)
+                .json({ message: "Trek does not belong to this vendor" });
+        }
+
+        if (trek.status !== "published") {
+            return res
+                .status(400)
+                .json({ message: "Trek is not available for booking" });
+        }
+
+        // Validate customer exists
+        const customer = await Customer.findByPk(customerId);
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        // Check available slots
+        const currentBookings = await Booking.count({
+            where: {
+                trek_id: trekId,
+                status: { [Op.in]: ["confirmed", "pending"] },
+            },
+        });
+
+        if (currentBookings + participants.length > trek.max_participants) {
+            return res.status(400).json({
+                message: "Not enough slots available",
+                availableSlots: trek.max_participants - currentBookings,
+            });
+        }
+
+        // Calculate pricing
+        const participantCount = participants.length || 0;
+        const totalAmount = trek.base_price * participantCount;
+        const finalAmount = totalAmount; // No discount for vendor-created bookings
+
+        console.log("Creating booking with:", {
+            customerId,
+            trekId,
+            vendorId,
+            participantCount,
+            totalAmount,
+            finalAmount,
+            participants,
+        });
+
+        // Create booking
+        const booking = await Booking.create({
+            customer_id: customerId,
+            trek_id: trekId,
+            vendor_id: vendorId,
+            pickup_point_id: pickupPointId,
+            total_travelers: participantCount,
+            total_amount: totalAmount,
+            discount_amount: 0,
+            final_amount: finalAmount,
+            status: status,
+            payment_status: paymentStatus,
+            booking_date: new Date(),
+            special_requests: specialRequests,
+        });
+
+        console.log("Booking created successfully:", booking.id);
+
+        // Create participant records only if there are participants
+        if (participants && participants.length > 0) {
+            const participantData = participants.map((participant) => ({
+                booking_id: booking.id,
+                name: participant.name,
+                age: participant.age,
+                gender: participant.gender,
+                phone: participant.phone,
+                emergency_contact: participant.emergencyContact,
+                medical_conditions: participant.medicalConditions || null,
+            }));
+
+            console.log("Creating participants:", participantData);
+            await BookingParticipant.bulkCreate(participantData);
+            console.log("Participants created successfully");
+        }
+
+        // Fetch complete booking data
+        const completeBooking = await Booking.findByPk(booking.id, {
+            include: [
+                { model: Trek, as: "trek" },
+                { model: Customer, as: "customer" },
+                { model: Vendor, as: "vendor" },
+                { model: PickupPoint, as: "pickupPoint" },
+                { model: BookingParticipant, as: "participants" },
+            ],
+        });
+
+        res.status(201).json({
+            message: "Booking created successfully",
+            booking: completeBooking,
+        });
+    } catch (error) {
+        console.error("Error creating vendor booking:", error);
+        console.error("Error details:", {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+        });
+        res.status(500).json({ message: "Failed to create booking" });
+    }
+};
+
 // Vendor: Get booking participants
 const getBookingParticipants = async (req, res) => {
     try {
         const { id } = req.params;
-        const vendorId = req.user.vendor_id || req.user.id;
+        const vendorId = req.user.vendorId; // Fixed: use vendorId from JWT token
 
         const booking = await Booking.findOne({
             where: {
@@ -588,7 +824,7 @@ const getAllBookings = async (req, res) => {
             where: whereClause,
             include: [
                 { model: Trek, as: "trek" },
-                { model: User, as: "user" },
+                { model: Customer, as: "customer" },
                 { model: Vendor, as: "vendor" },
                 { model: BookingParticipant, as: "participants" },
             ],
@@ -685,6 +921,7 @@ const getBookingAnalytics = async (req, res) => {
 
 module.exports = {
     createBooking,
+    createVendorBooking,
     getUserBookings,
     getBookingById,
     cancelBooking,

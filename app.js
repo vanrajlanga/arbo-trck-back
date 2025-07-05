@@ -21,8 +21,12 @@ const trekRoutes = require("./routes/trekRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const bookingRoutes = require("./routes/v1/bookingRoutes");
 
-// Import v1 routes
+// Import v1 routes (for mobile app)
 const v1Routes = require("./routes/v1");
+
+// Import new structured routes
+const adminRoutes = require("./routes/admin");
+const vendorPanelRoutes = require("./routes/vendor");
 
 const app = express();
 
@@ -47,10 +51,17 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // Static file serving for uploaded images
 app.use("/storage", express.static(path.join(__dirname, "storage")));
 
-// API v1 routes (primary for mobile app)
+// NEW API STRUCTURE
+// Admin panel routes
+app.use("/api/admin", adminRoutes);
+
+// Vendor panel routes
+app.use("/api/vendor", vendorPanelRoutes);
+
+// Mobile app routes (v1)
 app.use("/api/v1", v1Routes);
 
-// Legacy routes (maintain backward compatibility for frontend)
+// LEGACY ROUTES (maintain backward compatibility)
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/vendors", vendorRoutes);
@@ -74,19 +85,45 @@ app.get("/api", (req, res) => {
         version: "1.0.0",
         description: "RESTful API for the Arobo trekking platform",
         endpoints: {
+            admin: {
+                base: "/api/admin",
+                description: "Admin panel endpoints",
+                auth: "/api/admin/auth",
+                users: "/api/admin/users",
+                vendors: "/api/admin/vendors",
+                treks: "/api/admin/treks",
+                locations: "/api/admin/locations",
+                bookings: "/api/admin/bookings",
+                customers: "/api/admin/customers",
+                analytics: "/api/admin/analytics",
+                system: "/api/admin/system",
+            },
+            vendor: {
+                base: "/api/vendor",
+                description: "Vendor panel endpoints",
+                auth: "/api/vendor/auth",
+                treks: "/api/vendor/treks",
+                bookings: "/api/vendor/bookings",
+                customers: "/api/vendor/customers",
+                locations: "/api/vendor/locations",
+                analytics: "/api/vendor/analytics",
+            },
             v1: {
                 base: "/api/v1",
+                description: "Mobile app endpoints",
                 auth: "/api/v1/auth",
-                users: "/api/v1/users",
-                vendors: "/api/v1/vendors",
+                customer_auth: "/api/v1/customer/auth",
+                customer_bookings: "/api/v1/customer/bookings",
+                travelers: "/api/v1/customer/travelers",
                 treks: "/api/v1/treks",
                 locations: "/api/v1/locations",
                 bookings: "/api/v1/bookings",
             },
             legacy: {
+                description: "Legacy endpoints (deprecated)",
                 auth: "/api/auth",
                 users: "/api/users",
-                vendors: "/api/vendors (includes /api/vendors/customers)",
+                vendors: "/api/vendors",
                 bookings: "/api/bookings",
                 treks: "/api/vendor/treks, /api/admin/treks",
                 locations: "/api/states, /api/cities",
@@ -109,7 +146,13 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
     res.status(404).json({
         message: "Route not found",
-        availableRoutes: ["/api/v1", "/api", "/health"],
+        availableRoutes: [
+            "/api/admin",
+            "/api/vendor",
+            "/api/v1",
+            "/api",
+            "/health",
+        ],
     });
 });
 

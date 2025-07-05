@@ -1,4 +1,12 @@
-const { User, Role, Vendor, Trek, Booking, PaymentLog } = require("../models");
+const {
+    User,
+    Role,
+    Vendor,
+    Trek,
+    Booking,
+    PaymentLog,
+    Customer,
+} = require("../models");
 const bcrypt = require("bcrypt");
 
 const seedTestVendor = async () => {
@@ -76,25 +84,22 @@ const seedTestVendor = async () => {
             },
         ];
 
-        const customerUsers = [];
+        const customerRecords = [];
         for (const customerData of customers) {
-            const existingCustomer = await User.findOne({
+            const existingCustomer = await Customer.findOne({
                 where: { email: customerData.email },
             });
 
             if (!existingCustomer) {
-                const passwordHash = await bcrypt.hash("customer123", 10);
-                const customer = await User.create({
+                const customer = await Customer.create({
                     name: customerData.name,
                     email: customerData.email,
                     phone: customerData.phone,
-                    passwordHash,
-                    roleId: userRole.id,
                 });
-                customerUsers.push(customer);
+                customerRecords.push(customer);
                 console.log(`Customer ${customerData.name} created!`);
             } else {
-                customerUsers.push(existingCustomer);
+                customerRecords.push(existingCustomer);
                 console.log(`Customer ${customerData.name} already exists.`);
             }
         }
@@ -127,11 +132,11 @@ const seedTestVendor = async () => {
         }
 
         // Create test bookings
-        for (let i = 0; i < customerUsers.length; i++) {
-            const customer = customerUsers[i];
+        for (let i = 0; i < customerRecords.length; i++) {
+            const customer = customerRecords[i];
             const existingBooking = await Booking.findOne({
                 where: {
-                    user_id: customer.id,
+                    customer_id: customer.id,
                     vendor_id: vendor.id,
                     trek_id: trek.id,
                 },
@@ -139,10 +144,10 @@ const seedTestVendor = async () => {
 
             if (!existingBooking) {
                 const booking = await Booking.create({
-                    user_id: customer.id,
+                    customer_id: customer.id,
                     trek_id: trek.id,
                     vendor_id: vendor.id,
-                    total_participants: 2,
+                    total_travelers: 2,
                     total_amount: 10000.0,
                     discount_amount: 0.0,
                     final_amount: 10000.0,

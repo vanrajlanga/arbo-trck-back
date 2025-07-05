@@ -128,6 +128,10 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: "booking_id",
             as: "travelers",
         });
+        Booking.hasMany(models.BookingParticipant, {
+            foreignKey: "booking_id",
+            as: "participants",
+        });
         Booking.hasMany(models.PaymentLog, {
             foreignKey: "booking_id",
             as: "payments",
@@ -143,4 +147,4 @@ module.exports = (sequelize, DataTypes) => {
     };
 
     return Booking;
-}; 
+};

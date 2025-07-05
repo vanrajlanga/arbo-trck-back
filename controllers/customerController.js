@@ -1,5 +1,6 @@
 const {
     User,
+    Customer,
     Booking,
     Trek,
     PaymentLog,
@@ -44,14 +45,14 @@ const getVendorCustomers = async (req, res) => {
         }
 
         // Get customers with their booking statistics
-        const customers = await User.findAndCountAll({
+        const customers = await Customer.findAndCountAll({
             where: userWhereClause,
             include: [
                 {
                     model: Booking,
                     as: "bookings",
                     where: { vendor_id: vendorId },
-                    required: true, // Only users who have bookings with this vendor
+                    required: false, // Show all customers, not just those with bookings
                     include: [
                         {
                             model: Trek,
@@ -78,7 +79,7 @@ const getVendorCustomers = async (req, res) => {
             customers.rows.map(async (customer) => {
                 const customerBookings = await Booking.findAll({
                     where: {
-                        user_id: customer.id,
+                        customer_id: customer.id,
                         vendor_id: vendorId,
                     },
                     include: [
@@ -119,7 +120,10 @@ const getVendorCustomers = async (req, res) => {
                     lastBooking: lastBooking
                         ? new Date(lastBooking).toLocaleDateString("en-US")
                         : "N/A",
-                    totalSpent: `₹${totalSpent.toLocaleString()}`,
+                    totalSpent:
+                        totalBookings > 0
+                            ? `₹${totalSpent.toLocaleString()}`
+                            : "₹0",
                     status: isActive ? "Active" : "Inactive",
                     joinedDate: customer.createdAt
                         ? new Date(customer.createdAt).toLocaleDateString(
@@ -182,7 +186,7 @@ const getCustomerById = async (req, res) => {
             vendorId = userWithVendor.vendor.id;
         }
 
-        const customer = await User.findByPk(id, {
+        const customer = await Customer.findByPk(id, {
             include: [
                 {
                     model: Booking,
@@ -306,24 +310,12 @@ const getCustomerAnalytics = async (req, res) => {
 
         // Get customer analytics
         const analytics = await Promise.all([
-            // Total unique customers
-            Booking.findAll({
-                where: whereClause,
-                attributes: [
-                    [
-                        sequelize.fn(
-                            "COUNT",
-                            sequelize.fn("DISTINCT", sequelize.col("user_id"))
-                        ),
-                        "totalCustomers",
-                    ],
-                ],
-            }),
+            // Total unique customers (all customers, not just those with bookings)
+            Customer.count(),
 
             // New customers this month
-            Booking.findAll({
+            Customer.count({
                 where: {
-                    ...whereClause,
                     created_at: {
                         [Op.gte]: new Date(
                             new Date().getFullYear(),
@@ -332,28 +324,19 @@ const getCustomerAnalytics = async (req, res) => {
                         ),
                     },
                 },
-                attributes: [
-                    [
-                        sequelize.fn(
-                            "COUNT",
-                            sequelize.fn("DISTINCT", sequelize.col("user_id"))
-                        ),
-                        "newCustomers",
-                    ],
-                ],
             }),
 
             // Customer retention (customers with multiple bookings)
             Booking.findAll({
                 where: whereClause,
                 attributes: [
-                    "user_id",
+                    "customer_id",
                     [
                         sequelize.fn("COUNT", sequelize.col("id")),
                         "bookingCount",
                     ],
                 ],
-                group: ["user_id"],
+                group: ["customer_id"],
                 having: sequelize.literal("COUNT(id) > 1"),
             }),
 
@@ -369,8 +352,8 @@ const getCustomerAnalytics = async (req, res) => {
             }),
         ]);
 
-        const totalCustomers = analytics[0][0]?.dataValues?.totalCustomers || 0;
-        const newCustomers = analytics[1][0]?.dataValues?.newCustomers || 0;
+        const totalCustomers = analytics[0] || 0;
+        const newCustomers = analytics[1] || 0;
         const returningCustomers = analytics[2]?.length || 0;
         const avgCustomerValue = parseFloat(
             analytics[3][0]?.dataValues?.avgCustomerValue || 0
@@ -406,7 +389,7 @@ const updateCustomer = async (req, res) => {
         const { id } = req.params;
         const { name, phone } = req.body; // Only allow updating name and phone
 
-        const customer = await User.findByPk(id);
+        const customer = await Customer.findByPk(id);
         if (!customer) {
             return res.status(404).json({
                 success: false,
@@ -439,9 +422,135 @@ const updateCustomer = async (req, res) => {
     }
 };
 
+// Create a new customer for a vendor
+const createCustomer = async (req, res) => {
+    try {
+        let vendorId = req.user.vendorId;
+        if (!vendorId) {
+            const userWithVendor = await User.findByPk(req.user.id, {
+                include: [{ model: Vendor, as: "vendor" }],
+            });
+            if (!userWithVendor?.vendor) {
+                return res.status(403).json({
+                    success: false,
+                    message: "User is not associated with any vendor",
+                });
+            }
+            vendorId = userWithVendor.vendor.id;
+        }
+
+        const { name, email, phone } = req.body;
+        console.log("Creating customer with:", {
+            name,
+            email,
+            phone,
+            vendorId,
+        });
+
+        if (!name || !email || !phone) {
+            return res.status(400).json({
+                success: false,
+                message: "Name, email, and phone are required",
+            });
+        }
+
+        // Check if user already exists by email or phone
+        const existing = await Customer.findOne({
+            where: { [Op.or]: [{ email }, { phone }] },
+        });
+
+        console.log(
+            "Existing user check result:",
+            existing
+                ? {
+                      id: existing.id,
+                      name: existing.name,
+                      email: existing.email,
+                      phone: existing.phone,
+                  }
+                : "No existing user found"
+        );
+
+        if (existing) {
+            return res.status(409).json({
+                success: false,
+                message: "A customer with this email or phone already exists",
+                debug: {
+                    existingUser: {
+                        id: existing.id,
+                        name: existing.name,
+                        email: existing.email,
+                        phone: existing.phone,
+                    },
+                },
+            });
+        }
+
+        // Create the user (customer)
+        const customer = await Customer.create({
+            name,
+            email,
+            phone,
+            // Optionally, set a flag or role to indicate this is a customer
+        });
+
+        console.log("Customer created successfully:", {
+            id: customer.id,
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+        });
+
+        res.json({
+            success: true,
+            message: "Customer created successfully",
+            data: {
+                id: customer.id,
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone,
+                createdAt: customer.createdAt,
+            },
+        });
+    } catch (error) {
+        console.error("Error creating customer:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create customer",
+            error: error.message,
+        });
+    }
+};
+
+// Debug function to list all customers (for troubleshooting)
+const debugListCustomers = async (req, res) => {
+    try {
+        const customers = await Customer.findAll({
+            attributes: ["id", "name", "email", "phone", "createdAt", "status"],
+            order: [["createdAt", "DESC"]],
+        });
+
+        res.json({
+            success: true,
+            message: "All customers in database",
+            data: customers,
+            count: customers.length,
+        });
+    } catch (error) {
+        console.error("Error listing customers:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to list customers",
+            error: error.message,
+        });
+    }
+};
+
 module.exports = {
     getVendorCustomers,
     getCustomerById,
     getCustomerAnalytics,
     updateCustomer,
+    createCustomer,
+    debugListCustomers,
 };

@@ -115,7 +115,8 @@ const getCityById = async (req, res) => {
 
 const createCity = async (req, res) => {
     try {
-        const { cityName, stateName, region, status, launchDate } = req.body;
+        const { cityName, stateName, region, status, launchDate, isPopular } =
+            req.body;
 
         // Check if city already exists in the state
         const existingCity = await City.findOne({
@@ -137,6 +138,7 @@ const createCity = async (req, res) => {
             stateName,
             region,
             status,
+            isPopular: isPopular || false,
             launchDate,
         });
 

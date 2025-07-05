@@ -72,6 +72,7 @@ router.get("/:id/confirmation", bookingController.getBookingConfirmation);
 router.get("/:id/invoice", bookingController.getBookingInvoice);
 
 // Vendor routes (for managing bookings)
+router.post("/vendor/bookings", bookingController.createVendorBooking);
 router.get("/vendor/bookings", bookingController.getVendorBookings);
 router.patch("/vendor/:id/status", bookingController.updateBookingStatus);
 router.get(

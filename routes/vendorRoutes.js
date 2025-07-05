@@ -8,6 +8,9 @@ const {
     getVendorCustomers,
     getCustomerById,
     getCustomerAnalytics,
+    updateCustomer,
+    createCustomer,
+    debugListCustomers,
 } = require("../controllers/customerController");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -24,5 +27,8 @@ router.patch("/:id/status", updateVendorStatus);
 router.get("/customers", getVendorCustomers);
 router.get("/customers/analytics", getCustomerAnalytics);
 router.get("/customers/:id", getCustomerById);
+router.put("/customers/:id", updateCustomer);
+router.post("/customers", createCustomer);
+router.get("/customers-debug/list", debugListCustomers);
 
 module.exports = router;
