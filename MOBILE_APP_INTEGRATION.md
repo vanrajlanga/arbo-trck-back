@@ -1,93 +1,431 @@
-# Mobile App Integration Guide
+# Mobile App API Integration Guide
 
-## 🚀 Quick Start
+## Overview
 
-The Arobo Trekking Platform APIs are **100% ready** for mobile app integration. All endpoints have been tested and verified working.
+This document provides comprehensive documentation for all API endpoints under `/api/v1` designed for mobile application integration. The API supports both customer-facing features (mobile app) and admin/vendor features (web interface).
 
-### Base URL
+## Base URL
 
 ```
 http://localhost:5000/api/v1
 ```
 
-### Authentication Flow
+## Authentication
 
-1. Use Firebase SDK for phone authentication
-2. Get Firebase ID Token after OTP verification
-3. Send token to backend for JWT exchange
-4. Use JWT for all protected endpoints
+### Customer Authentication (Mobile App)
+
+-   **Type**: Firebase ID Token + JWT
+-   **Header**: `Authorization: Bearer <jwt_token>`
+-   **Token Expiry**: 30 days
+
+### Admin/Vendor Authentication (Web Interface)
+
+-   **Type**: Email/Password + JWT
+-   **Header**: `Authorization: Bearer <jwt_token>`
+-   **Token Expiry**: 24 hours
 
 ---
 
-## 📱 Essential Endpoints
+## 1. Customer Authentication APIs
 
-### 1. Authentication
+### 1.1 Firebase Token Verification & Login
 
-```bash
-POST /api/v1/customer/auth/firebase-verify
+**Endpoint**: `POST /customer/auth/firebase-verify`
+
+**Description**: Verify Firebase ID token and login/register customer
+
+**Request Body**:
+
+```json
+{
+    "firebaseIdToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
 ```
 
-### 2. Trek Discovery (Public)
+**Response**:
 
-```bash
-GET /api/v1/treks                    # All treks
-GET /api/v1/treks/search?q=query     # Search treks
-GET /api/v1/treks/:id               # Trek details
-GET /api/v1/treks/category/:id      # By category
+```json
+{
+    "success": true,
+    "message": "Login successful",
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "customer": {
+            "id": 1,
+            "phone": "+919876543210",
+            "name": "John Doe",
+            "email": "john@example.com",
+            "profileCompleted": true,
+            "isNewCustomer": false
+        },
+        "expiresIn": "30d"
+    }
+}
 ```
 
-### 3. Destination Discovery (Public)
+### 1.2 Update Customer Profile
 
-```bash
-GET /api/v1/destinations                    # All destinations
-GET /api/v1/destinations/popular            # Popular destinations
-GET /api/v1/destinations/search?q=query     # Search destinations
-GET /api/v1/destinations/:id                # Destination details
-GET /api/v1/destinations/region/:region     # By region
+**Endpoint**: `PUT /customer/auth/profile`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Request Body**:
+
+```json
+{
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "dateOfBirth": "1990-01-01",
+    "emergencyContact": "+919876543211"
+}
 ```
 
-### 4. Coupon Discovery (Public)
+**Response**:
 
-```bash
-GET /api/v1/coupons                    # All active coupons
-GET /api/v1/coupons/code/:code         # Get coupon by code
-POST /api/v1/coupons/validate          # Validate coupon for booking
+```json
+{
+    "success": true,
+    "message": "Profile updated successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "phone": "+919876543210",
+            "name": "John Doe",
+            "email": "john@example.com",
+            "dateOfBirth": "1990-01-01",
+            "emergencyContact": "+919876543211",
+            "profileCompleted": true
+        }
+    }
+}
 ```
 
-### 5. Traveler Management (Protected)
+### 1.3 Get Customer Profile
 
-```bash
-GET    /api/v1/customer/travelers     # List travelers
-POST   /api/v1/customer/travelers     # Create traveler
-GET    /api/v1/customer/travelers/:id # Get details
-PUT    /api/v1/customer/travelers/:id # Update traveler
-DELETE /api/v1/customer/travelers/:id # Delete traveler
+**Endpoint**: `GET /customer/auth/profile`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "customer": {
+            "id": 1,
+            "phone": "+919876543210",
+            "name": "John Doe",
+            "email": "john@example.com",
+            "dateOfBirth": "1990-01-01",
+            "emergencyContact": "+919876543211",
+            "profileCompleted": true,
+            "travelers": [
+                {
+                    "id": 1,
+                    "name": "John Doe",
+                    "age": 30,
+                    "gender": "male",
+                    "phone": "+919876543210"
+                }
+            ]
+        }
+    }
+}
 ```
 
-### 6. Booking Management (Protected)
+---
 
-```bash
-POST /api/v1/customer/bookings           # Create booking
-GET  /api/v1/customer/bookings           # List bookings
-GET  /api/v1/customer/bookings/:id       # Booking details
-PUT  /api/v1/customer/bookings/:id/cancel # Cancel booking
+## 2. Trek APIs
+
+### 2.1 Get All Public Treks
+
+**Endpoint**: `GET /treks`
+
+**Query Parameters**:
+
+-   `page` (optional): Page number (default: 1)
+-   `limit` (optional): Items per page (default: 10)
+-   `difficulty` (optional): Filter by difficulty (easy, moderate, difficult, extreme)
+-   `minPrice` (optional): Minimum price filter
+-   `maxPrice` (optional): Maximum price filter
+-   `category` (optional): Filter by category
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 15,
+            "name": "Valley of Flowers Trek",
+            "description": "Experience the magical Valley of Flowers...",
+            "destination": "Valley of Flowers",
+            "duration": "6 Days / 5 Nights",
+            "durationDays": 6,
+            "durationNights": 5,
+            "price": 15999.0,
+            "difficulty": "moderate",
+            "category": "Flower Valley Trek",
+            "availableSlots": 15,
+            "startDate": "2025-08-15",
+            "endDate": "2025-08-20",
+            "images": [
+                "/storage/trek_1_image1.jpg",
+                "/storage/trek_1_image2.jpg"
+            ],
+            "rating": 4.5,
+            "hasDiscount": true,
+            "discountValue": 10.0,
+            "discountType": "percentage",
+            "discountText": "10% OFF",
+            "vendor": {
+                "id": 1,
+                "name": "Himalayan Adventures",
+                "rating": 4.0
+            },
+            "createdAt": "2025-01-15T10:30:00.000Z"
+        }
+    ],
+    "pagination": {
+        "currentPage": 1,
+        "totalPages": 5,
+        "totalCount": 50,
+        "hasMore": true
+    }
+}
 ```
 
-### 7. Locations
+### 2.2 Get Trek Details
 
-```bash
-GET /api/v1/locations/cities  # Available cities
+**Endpoint**: `GET /treks/:id`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 15,
+        "name": "Valley of Flowers Trek",
+        "description": "Experience the magical Valley of Flowers...",
+        "destination": "Valley of Flowers",
+        "destination_id": 1,
+        "city_id": 5,
+        "city": {
+            "id": 5,
+            "cityName": "Dehradun",
+            "state": {
+                "id": 1,
+                "name": "Uttarakhand"
+            }
+        },
+        "duration": "6 Days / 5 Nights",
+        "durationDays": 6,
+        "durationNights": 5,
+        "price": 15999.0,
+        "difficulty": "moderate",
+        "category": "Flower Valley Trek",
+        "trekType": "mountain",
+        "maxParticipants": 15,
+        "availableSlots": 15,
+        "startDate": "2025-08-15",
+        "endDate": "2025-08-20",
+        "meetingPoint": "Dehradun Railway Station",
+        "meetingTime": "08:00 AM",
+        "images": ["/storage/trek_1_image1.jpg", "/storage/trek_1_image2.jpg"],
+        "itinerary": [
+            {
+                "day": 1,
+                "activities": ["Arrival at Dehradun", "Transfer to base camp"]
+            }
+        ],
+        "accommodations": [
+            {
+                "night": 1,
+                "type": "tent",
+                "details": {
+                    "name": "Base Camp Tents",
+                    "location": "Valley Base Camp",
+                    "description": "Comfortable camping tents"
+                }
+            }
+        ],
+        "trekStages": [
+            {
+                "id": 1,
+                "name": "Base to Valley",
+                "description": "Trek from base camp to valley",
+                "distance": "8 km",
+                "duration": "4 hours"
+            }
+        ],
+        "inclusions": ["Accommodation", "Meals", "Guide"],
+        "exclusions": ["Personal expenses", "Travel insurance"],
+        "rating": 4.5,
+        "hasDiscount": true,
+        "discountValue": 10.0,
+        "discountType": "percentage",
+        "discountText": "10% OFF",
+        "vendor": {
+            "id": 1,
+            "name": "Himalayan Adventures",
+            "email": "info@himalayanadventures.com",
+            "phone": "+919876543210",
+            "rating": 4.0,
+            "status": "active"
+        },
+        "createdAt": "2025-01-15T10:30:00.000Z",
+        "updatedAt": "2025-01-15T10:30:00.000Z"
+    }
+}
 ```
 
-### 8. Location Management
+### 2.3 Search Treks
 
-#### Get All States
+**Endpoint**: `GET /treks/search`
 
-```http
-GET /api/v1/states
+**Query Parameters**:
+
+-   `q` (required): Search query
+-   `page` (optional): Page number (default: 1)
+-   `limit` (optional): Items per page (default: 10)
+-   `difficulty` (optional): Filter by difficulty
+-   `minPrice` (optional): Minimum price filter
+-   `maxPrice` (optional): Maximum price filter
+-   `startDate` (optional): Filter by start date
+-   `destination_id` (optional): Filter by destination
+-   `city_id` (optional): Filter by city
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 15,
+            "name": "Valley of Flowers Trek",
+            "description": "Experience the magical Valley of Flowers...",
+            "destination": "Valley of Flowers",
+            "destination_id": 1,
+            "city_id": 5,
+            "city": "Dehradun",
+            "duration": "6 Days / 5 Nights",
+            "durationDays": 6,
+            "durationNights": 5,
+            "price": 15999.0,
+            "difficulty": "moderate",
+            "trekType": "mountain",
+            "category": "Flower Valley Trek",
+            "maxParticipants": 15,
+            "availableSlots": 15,
+            "startDate": "2025-08-15",
+            "endDate": "2025-08-20",
+            "meetingPoint": "Dehradun Railway Station",
+            "meetingTime": "08:00 AM",
+            "status": "published",
+            "images": ["/storage/trek_1_image1.jpg"],
+            "rating": 4.5,
+            "hasDiscount": true,
+            "discountValue": 10.0,
+            "discountType": "percentage",
+            "discountText": "10% OFF",
+            "vendor": {
+                "id": 1,
+                "name": "Himalayan Adventures",
+                "email": "info@himalayanadventures.com",
+                "phone": "+919876543210",
+                "rating": 4.0,
+                "status": "active"
+            },
+            "createdAt": "2025-01-15T10:30:00.000Z",
+            "updatedAt": "2025-01-15T10:30:00.000Z"
+        }
+    ],
+    "searchQuery": "valley flowers",
+    "filters": {
+        "destination_id": null,
+        "city_id": null,
+        "startDate": null,
+        "difficulty": null,
+        "priceRange": {
+            "min": null,
+            "max": null
+        }
+    },
+    "pagination": {
+        "currentPage": 1,
+        "totalPages": 1,
+        "totalCount": 1
+    }
+}
 ```
 
-**Response:**
+### 2.4 Get Treks by Category
+
+**Endpoint**: `GET /treks/category/:categoryId`
+
+**Query Parameters**:
+
+-   `page` (optional): Page number (default: 1)
+-   `limit` (optional): Items per page (default: 10)
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 15,
+            "name": "Valley of Flowers Trek",
+            "description": "Experience the magical Valley of Flowers...",
+            "destination": "Valley of Flowers",
+            "duration": "6 Days / 5 Nights",
+            "price": 15999.0,
+            "difficulty": "moderate",
+            "availableSlots": 15,
+            "images": ["/storage/trek_1_image1.jpg"],
+            "rating": 4.5,
+            "hasDiscount": true,
+            "discountValue": 10.0,
+            "discountType": "percentage",
+            "discountText": "10% OFF",
+            "vendor": {
+                "id": 1,
+                "name": "Himalayan Adventures",
+                "rating": 4.0
+            }
+        }
+    ],
+    "pagination": {
+        "currentPage": 1,
+        "totalPages": 1,
+        "totalCount": 1
+    }
+}
+```
+
+---
+
+## 3. Destination APIs
+
+### 3.1 Get All Destinations
+
+**Endpoint**: `GET /destinations`
+
+**Query Parameters**:
+
+-   `state` (optional): Filter by state
+-   `isPopular` (optional): Filter popular destinations (true/false)
+-   `status` (optional): Filter by status (default: active)
+-   `limit` (optional): Items per page (default: 100)
+-   `offset` (optional): Offset for pagination (default: 0)
+
+**Response**:
 
 ```json
 {
@@ -95,53 +433,160 @@ GET /api/v1/states
     "data": [
         {
             "id": 1,
-            "name": "Uttarakhand",
-            "state_code": "UK",
-            "region": "North",
+            "name": "Valley of Flowers",
+            "state": "Uttarakhand",
+            "isPopular": true,
             "status": "active",
-            "is_popular": true,
-            "total_cities": 5,
-            "total_customers": 1250,
-            "total_vendors": 45,
-            "total_bookings": 890,
-            "cities": [
-                {
-                    "id": 1,
-                    "name": "Dehradun",
-                    "status": "active",
-                    "is_popular": true
-                }
-            ]
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
         }
-    ]
+    ],
+    "pagination": {
+        "total": 42,
+        "limit": 100,
+        "offset": 0,
+        "hasMore": false
+    }
 }
 ```
 
-#### Get Popular States
+### 3.2 Get Popular Destinations
 
-```http
-GET /api/v1/states/popular
+**Endpoint**: `GET /destinations/popular`
+
+**Query Parameters**:
+
+-   `limit` (optional): Number of destinations (default: 10)
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Valley of Flowers",
+            "state": "Uttarakhand",
+            "isPopular": true,
+            "status": "active",
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
+        }
+    ],
+    "count": 1
+}
 ```
 
-#### Get States by Region
+### 3.3 Search Destinations
 
-```http
-GET /api/v1/states/region/{region}
+**Endpoint**: `GET /destinations/search`
+
+**Query Parameters**:
+
+-   `q` (required): Search query
+-   `region` (optional): Filter by region
+-   `difficulty` (optional): Filter by difficulty
+-   `trekType` (optional): Filter by trek type
+-   `isPopular` (optional): Filter popular destinations
+-   `status` (optional): Filter by status (default: active)
+-   `limit` (optional): Items per page (default: 20)
+-   `offset` (optional): Offset for pagination (default: 0)
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Valley of Flowers",
+            "state": "Uttarakhand",
+            "isPopular": true,
+            "status": "active",
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
+        }
+    ],
+    "pagination": {
+        "total": 1,
+        "limit": 20,
+        "offset": 0,
+        "hasMore": false
+    },
+    "search": {
+        "query": "valley",
+        "results": 1
+    }
+}
 ```
 
-#### Get State by ID
+### 3.4 Get Destinations by Region
 
-```http
-GET /api/v1/states/{id}
+**Endpoint**: `GET /destinations/region/:region`
+
+**Query Parameters**:
+
+-   `limit` (optional): Items per page (default: 50)
+-   `offset` (optional): Offset for pagination (default: 0)
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Valley of Flowers",
+            "state": "Uttarakhand",
+            "isPopular": true,
+            "status": "active",
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
+        }
+    ],
+    "region": "north",
+    "pagination": {
+        "total": 1,
+        "limit": 50,
+        "offset": 0,
+        "hasMore": false
+    }
+}
 ```
 
-#### Get All Cities
+### 3.5 Get Destination by ID
 
-```http
-GET /api/v1/locations/cities
+**Endpoint**: `GET /destinations/:id`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "name": "Valley of Flowers",
+        "state": "Uttarakhand",
+        "isPopular": true,
+        "status": "active",
+        "created_at": "2025-01-15T10:30:00.000Z",
+        "updated_at": "2025-01-15T10:30:00.000Z"
+    }
+}
 ```
 
-**Response:**
+---
+
+## 4. Location APIs
+
+### 4.1 Get Cities
+
+**Endpoint**: `GET /locations/cities`
+
+**Response**:
 
 ```json
 {
@@ -150,188 +595,26 @@ GET /api/v1/locations/cities
         "cities": [
             {
                 "id": 1,
-                "name": "Dehradun",
-                "stateId": 1,
-                "status": "active",
-                "is_popular": true,
-                "launch_date": "2023-01-15",
-                "total_customers": 450,
-                "total_vendors": 12,
-                "total_bookings": 320,
-                "avg_rating": 4.2,
-                "popular_treks": ["Kedarnath", "Valley of Flowers"],
+                "cityName": "Dehradun",
                 "state": {
                     "id": 1,
-                    "name": "Uttarakhand",
-                    "region": "North"
+                    "name": "Uttarakhand"
                 }
             }
-        ],
-        "pagination": {
-            "currentPage": 1,
-            "totalPages": 5,
-            "totalItems": 50,
-            "itemsPerPage": 10
-        },
-        "statistics": {
-            "totalCities": 50,
-            "activeCities": 45,
-            "totalCustomers": 12500,
-            "totalBookings": 8900,
-            "growthRate": 23
-        }
+        ]
     }
 }
 ```
 
 ---
 
-## 🔐 Authentication Headers
+## 5. State APIs
 
-For protected endpoints, include:
+### 5.1 Get All States
 
-```
-Authorization: Bearer <jwt_token>
-```
+**Endpoint**: `GET /states`
 
----
-
-## ✅ Test Results
-
-All APIs tested and working:
-
--   ✅ API Info: Working
--   ✅ Firebase Auth: Working
--   ✅ Public Treks: Working
--   ✅ Trek Search: Working
--   ✅ Trek Details: Working
--   ✅ **Destinations: Working**
--   ✅ **Popular Destinations: Working**
--   ✅ **Destination Search: Working**
--   ✅ **Destination by Region: Working**
--   ✅ **Coupons: Working**
--   ✅ **Coupon Validation: Working**
--   ✅ Cities: Working
--   ✅ Protected Routes: Working
--   ✅ Authentication: Working
-
-**Success Rate: 100%**
-
----
-
-## 📋 Sample API Calls
-
-### Firebase Authentication
-
-```bash
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"firebaseIdToken":"your_firebase_token"}' \
-  http://localhost:5000/api/v1/customer/auth/firebase-verify
-```
-
-### Get All Destinations
-
-```bash
-curl http://localhost:5000/api/v1/destinations
-```
-
-### Get Popular Destinations
-
-```bash
-curl http://localhost:5000/api/v1/destinations/popular
-```
-
-### Search Destinations
-
-```bash
-curl "http://localhost:5000/api/v1/destinations/search?q=Kedarnath"
-```
-
-### Get Destinations by Region
-
-```bash
-curl http://localhost:5000/api/v1/destinations/region/North
-```
-
-### Get Destination Details
-
-```bash
-curl http://localhost:5000/api/v1/destinations/1
-```
-
-### Get All Active Coupons
-
-```bash
-curl http://localhost:5000/api/v1/coupons
-```
-
-### Get Coupon by Code
-
-```bash
-curl http://localhost:5000/api/v1/coupons/code/SAVE20
-```
-
-### Validate Coupon
-
-```bash
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "SAVE20",
-    "amount": 5000
-  }' \
-  http://localhost:5000/api/v1/coupons/validate
-```
-
-### Get All Treks
-
-```bash
-curl http://localhost:5000/api/v1/treks
-```
-
-### Create Traveler (Protected)
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer your_jwt_token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "age": 30,
-    "gender": "male",
-    "emergency_contact_name": "Jane Doe",
-    "emergency_contact_phone": "+919898933988"
-  }' \
-  http://localhost:5000/api/v1/customer/travelers
-```
-
----
-
-## 🎯 Destination API Features
-
-### Filtering Options
-
-All destination endpoints support filtering:
-
-```bash
-# Filter by region
-GET /api/v1/destinations?region=North
-
-# Filter by difficulty
-GET /api/v1/destinations?difficulty=moderate
-
-# Filter by trek type
-GET /api/v1/destinations?trekType=mountain
-
-# Filter popular destinations only
-GET /api/v1/destinations?isPopular=true
-
-# Pagination
-GET /api/v1/destinations?limit=10&offset=0
-```
-
-### Response Format
+**Response**:
 
 ```json
 {
@@ -339,49 +622,19 @@ GET /api/v1/destinations?limit=10&offset=0
     "data": [
         {
             "id": 1,
-            "name": "Kedarnath",
-            "description": "Sacred Hindu temple dedicated to Lord Shiva",
-            "region": "North",
-            "state": "Uttarakhand",
-            "altitude": 3584,
-            "bestTimeToVisit": ["May", "June", "September", "October"],
-            "difficulty": "moderate",
-            "trekType": "mountain",
-            "isPopular": true,
-            "status": "active",
-            "imageUrl": "https://example.com/image.jpg",
-            "coordinates": { "lat": 30.7346, "lng": 79.0669 },
-            "created_at": "2025-07-05T12:20:22.000Z",
-            "updated_at": "2025-07-05T12:20:22.000Z"
+            "name": "Uttarakhand",
+            "region": "north",
+            "isPopular": true
         }
-    ],
-    "pagination": {
-        "total": 10,
-        "limit": 50,
-        "offset": 0,
-        "hasMore": false
-    }
+    ]
 }
 ```
 
----
+### 5.2 Get Popular States
 
-## 🎯 Coupon API Features
+**Endpoint**: `GET /states/popular`
 
-### Available Endpoints
-
-```bash
-# Get all active coupons
-GET /api/v1/coupons
-
-# Get coupon by specific code
-GET /api/v1/coupons/code/SAVE20
-
-# Validate coupon for booking
-POST /api/v1/coupons/validate
-```
-
-### Coupon Response Format
+**Response**:
 
 ```json
 {
@@ -389,24 +642,91 @@ POST /api/v1/coupons/validate
     "data": [
         {
             "id": 1,
-            "code": "SAVE20",
-            "description": "Get 20% off on your first booking",
+            "name": "Uttarakhand",
+            "region": "north",
+            "isPopular": true
+        }
+    ]
+}
+```
+
+### 5.3 Get States by Region
+
+**Endpoint**: `GET /states/region/:region`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Uttarakhand",
+            "region": "north",
+            "isPopular": true
+        }
+    ]
+}
+```
+
+### 5.4 Get State by ID
+
+**Endpoint**: `GET /states/:id`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "name": "Uttarakhand",
+        "region": "north",
+        "isPopular": true
+    }
+}
+```
+
+---
+
+## 6. Coupon APIs
+
+### 6.1 Get All Coupons
+
+**Endpoint**: `GET /coupons`
+
+**Query Parameters**:
+
+-   `limit` (optional): Items per page (default: 50)
+-   `offset` (optional): Offset for pagination (default: 0)
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "code": "WELCOME10",
+            "description": "Welcome discount for new customers",
             "discount_type": "percentage",
-            "discount_value": 20.0,
+            "discount_value": 10.0,
             "min_order_amount": 1000.0,
             "max_discount_amount": 500.0,
             "usage_limit": 100,
             "used_count": 25,
-            "valid_from": "2025-07-01T00:00:00.000Z",
+            "valid_from": "2025-01-01T00:00:00.000Z",
             "valid_until": "2025-12-31T23:59:59.000Z",
             "is_active": true,
             "status": "active",
-            "created_at": "2025-07-06T09:31:33.000Z",
-            "updated_at": "2025-07-06T09:31:33.000Z"
+            "created_at": "2025-01-01T00:00:00.000Z",
+            "updated_at": "2025-01-01T00:00:00.000Z"
         }
     ],
     "pagination": {
-        "total": 5,
+        "total": 1,
         "limit": 50,
         "offset": 0,
         "hasMore": false
@@ -414,7 +734,49 @@ POST /api/v1/coupons/validate
 }
 ```
 
-### Coupon Validation Response
+### 6.2 Get Coupon by Code
+
+**Endpoint**: `GET /coupons/code/:code`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "code": "WELCOME10",
+        "description": "Welcome discount for new customers",
+        "discount_type": "percentage",
+        "discount_value": 10.0,
+        "min_order_amount": 1000.0,
+        "max_discount_amount": 500.0,
+        "usage_limit": 100,
+        "used_count": 25,
+        "valid_from": "2025-01-01T00:00:00.000Z",
+        "valid_until": "2025-12-31T23:59:59.000Z",
+        "is_active": true,
+        "status": "active",
+        "created_at": "2025-01-01T00:00:00.000Z",
+        "updated_at": "2025-01-01T00:00:00.000Z"
+    }
+}
+```
+
+### 6.3 Validate Coupon
+
+**Endpoint**: `POST /coupons/validate`
+
+**Request Body**:
+
+```json
+{
+    "code": "WELCOME10",
+    "amount": 5000.0
+}
+```
+
+**Response**:
 
 ```json
 {
@@ -422,56 +784,427 @@ POST /api/v1/coupons/validate
     "data": {
         "coupon": {
             "id": 1,
-            "code": "SAVE20",
-            "description": "Get 20% off on your first booking",
+            "code": "WELCOME10",
+            "description": "Welcome discount for new customers",
             "discount_type": "percentage",
-            "discount_value": 20.0,
+            "discount_value": 10.0,
             "min_order_amount": 1000.0,
             "max_discount_amount": 500.0,
             "usage_limit": 100,
             "used_count": 25,
-            "valid_from": "2025-07-01T00:00:00.000Z",
+            "valid_from": "2025-01-01T00:00:00.000Z",
             "valid_until": "2025-12-31T23:59:59.000Z",
             "is_active": true,
             "status": "active"
         },
-        "originalAmount": 5000,
-        "discountAmount": 500,
-        "finalAmount": 4500,
-        "savings": 500
+        "originalAmount": 5000.0,
+        "discountAmount": 500.0,
+        "finalAmount": 4500.0,
+        "savings": 500.0
     }
 }
 ```
 
-### Filtering Options
+---
 
-```bash
-# Pagination
-GET /api/v1/coupons?limit=10&offset=0
+## 7. Customer Booking APIs
 
-# Get specific coupon by code
-GET /api/v1/coupons/code/SAVE20
+### 7.1 Create Booking
+
+**Endpoint**: `POST /customer/bookings`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Request Body**:
+
+```json
+{
+    "trekId": 15,
+    "participants": [
+        {
+            "name": "John Doe",
+            "age": 30,
+            "gender": "male",
+            "phone": "+919876543210",
+            "emergencyContact": "+919876543211"
+        }
+    ],
+    "pickupPointId": 1,
+    "couponCode": "WELCOME10"
+}
+```
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "message": "Booking created successfully",
+    "data": {
+        "booking": {
+            "id": 1,
+            "bookingNumber": "BK20250115001",
+            "trekId": 15,
+            "trekName": "Valley of Flowers Trek",
+            "customerId": 1,
+            "totalAmount": 15999.0,
+            "discountAmount": 1599.9,
+            "finalAmount": 14399.1,
+            "status": "pending",
+            "participants": [
+                {
+                    "id": 1,
+                    "name": "John Doe",
+                    "age": 30,
+                    "gender": "male",
+                    "phone": "+919876543210",
+                    "emergencyContact": "+919876543211"
+                }
+            ],
+            "createdAt": "2025-01-15T10:30:00.000Z"
+        }
+    }
+}
+```
+
+### 7.2 Get Customer Bookings
+
+**Endpoint**: `GET /customer/bookings`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "bookingNumber": "BK20250115001",
+            "trekId": 15,
+            "trekName": "Valley of Flowers Trek",
+            "trekImage": "/storage/trek_1_image1.jpg",
+            "startDate": "2025-08-15",
+            "endDate": "2025-08-20",
+            "totalAmount": 15999.0,
+            "finalAmount": 14399.1,
+            "status": "confirmed",
+            "participants": [
+                {
+                    "id": 1,
+                    "name": "John Doe",
+                    "age": 30,
+                    "gender": "male"
+                }
+            ],
+            "createdAt": "2025-01-15T10:30:00.000Z"
+        }
+    ]
+}
+```
+
+### 7.3 Get Booking Details
+
+**Endpoint**: `GET /customer/bookings/:id`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "bookingNumber": "BK20250115001",
+        "trekId": 15,
+        "trekName": "Valley of Flowers Trek",
+        "trekImage": "/storage/trek_1_image1.jpg",
+        "startDate": "2025-08-15",
+        "endDate": "2025-08-20",
+        "meetingPoint": "Dehradun Railway Station",
+        "meetingTime": "08:00 AM",
+        "totalAmount": 15999.0,
+        "discountAmount": 1599.9,
+        "finalAmount": 14399.1,
+        "status": "confirmed",
+        "participants": [
+            {
+                "id": 1,
+                "name": "John Doe",
+                "age": 30,
+                "gender": "male",
+                "phone": "+919876543210",
+                "emergencyContact": "+919876543211"
+            }
+        ],
+        "vendor": {
+            "id": 1,
+            "name": "Himalayan Adventures",
+            "phone": "+919876543210",
+            "email": "info@himalayanadventures.com"
+        },
+        "createdAt": "2025-01-15T10:30:00.000Z",
+        "updatedAt": "2025-01-15T10:30:00.000Z"
+    }
+}
+```
+
+### 7.4 Cancel Booking
+
+**Endpoint**: `PUT /customer/bookings/:id/cancel`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "message": "Booking cancelled successfully",
+    "data": {
+        "booking": {
+            "id": 1,
+            "status": "cancelled",
+            "cancelledAt": "2025-01-15T11:30:00.000Z"
+        }
+    }
+}
 ```
 
 ---
 
-## 🛠️ Development Setup
+## 8. Traveler Management APIs
 
-1. **Backend Server**: Running on port 5000
-2. **Database**: MySQL on port 3306
-3. **Firebase**: Configured and working
-4. **All APIs**: Tested and verified
+### 8.1 Get Travelers
+
+**Endpoint**: `GET /customer/travelers`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "John Doe",
+            "age": 30,
+            "gender": "male",
+            "phone": "+919876543210",
+            "emergencyContact": "+919876543211",
+            "isActive": true,
+            "createdAt": "2025-01-15T10:30:00.000Z"
+        }
+    ]
+}
+```
+
+### 8.2 Create Traveler
+
+**Endpoint**: `POST /customer/travelers`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Request Body**:
+
+```json
+{
+    "name": "Jane Doe",
+    "age": 28,
+    "gender": "female",
+    "phone": "+919876543212",
+    "emergencyContact": "+919876543213"
+}
+```
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "message": "Traveler created successfully",
+    "data": {
+        "traveler": {
+            "id": 2,
+            "name": "Jane Doe",
+            "age": 28,
+            "gender": "female",
+            "phone": "+919876543212",
+            "emergencyContact": "+919876543213",
+            "isActive": true,
+            "createdAt": "2025-01-15T10:30:00.000Z"
+        }
+    }
+}
+```
+
+### 8.3 Get Traveler Details
+
+**Endpoint**: `GET /customer/travelers/:id`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "name": "John Doe",
+        "age": 30,
+        "gender": "male",
+        "phone": "+919876543210",
+        "emergencyContact": "+919876543211",
+        "isActive": true,
+        "createdAt": "2025-01-15T10:30:00.000Z"
+    }
+}
+```
+
+### 8.4 Update Traveler
+
+**Endpoint**: `PUT /customer/travelers/:id`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Request Body**:
+
+```json
+{
+    "name": "John Smith",
+    "age": 31,
+    "emergencyContact": "+919876543214"
+}
+```
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "message": "Traveler updated successfully",
+    "data": {
+        "traveler": {
+            "id": 1,
+            "name": "John Smith",
+            "age": 31,
+            "gender": "male",
+            "phone": "+919876543210",
+            "emergencyContact": "+919876543214",
+            "isActive": true,
+            "updatedAt": "2025-01-15T11:30:00.000Z"
+        }
+    }
+}
+```
+
+### 8.5 Delete Traveler
+
+**Endpoint**: `DELETE /customer/travelers/:id`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "message": "Traveler deleted successfully"
+}
+```
+
+### 8.6 Get Traveler Bookings
+
+**Endpoint**: `GET /customer/travelers/:id/bookings`
+
+**Headers**: `Authorization: Bearer <jwt_token>`
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "bookingNumber": "BK20250115001",
+            "trekName": "Valley of Flowers Trek",
+            "startDate": "2025-08-15",
+            "endDate": "2025-08-20",
+            "status": "confirmed",
+            "createdAt": "2025-01-15T10:30:00.000Z"
+        }
+    ]
+}
+```
 
 ---
 
-## 📞 Support
+## Error Responses
 
--   All APIs are production-ready
--   Firebase authentication is properly configured
--   JWT token validation is working
--   Protected routes are secured
--   Error handling is implemented
--   **Destination APIs are fully functional**
--   **Coupon APIs are fully functional**
+### Standard Error Format
 
-**Status: ✅ READY FOR MOBILE APP INTEGRATION**
+```json
+{
+    "success": false,
+    "message": "Error description",
+    "error": "Detailed error message (optional)"
+}
+```
+
+### Common HTTP Status Codes
+
+-   `200`: Success
+-   `201`: Created
+-   `400`: Bad Request (validation errors)
+-   `401`: Unauthorized (authentication required)
+-   `403`: Forbidden (insufficient permissions)
+-   `404`: Not Found
+-   `500`: Internal Server Error
+
+### Validation Error Example
+
+```json
+{
+    "success": false,
+    "message": "Validation errors",
+    "errors": [
+        {
+            "field": "phone",
+            "message": "Valid phone number is required"
+        }
+    ]
+}
+```
+
+---
+
+## Rate Limiting
+
+-   **Public APIs**: 100 requests per minute per IP
+-   **Authenticated APIs**: 1000 requests per minute per user
+-   **Booking APIs**: 10 requests per minute per user
+
+---
+
+## Versioning
+
+-   Current version: `v1`
+-   API version is included in the URL: `/api/v1/`
+-   Breaking changes will be introduced in new versions
+-   Deprecated endpoints will be announced 6 months in advance
+
+---
+
+## Support
+
+For API support and questions:
+
+-   Email: api-support@arobo.com
+-   Documentation: https://docs.arobo.com/api
+-   Status Page: https://status.arobo.com
