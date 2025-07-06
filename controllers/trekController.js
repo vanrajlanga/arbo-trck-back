@@ -8,6 +8,7 @@ const {
     TrekStage,
     Batch,
     Destination,
+    City,
 } = require("../models");
 const { validationResult } = require("express-validator");
 const { saveBase64Image, deleteImage } = require("../utils/fileUpload");
@@ -112,10 +113,8 @@ exports.getVendorTreks = async (req, res) => {
 
         // Transform data to match frontend format
         const transformedTreks = treks.map((trek) => {
-            const destinationName =
-                trek.destination || trek.destinationData?.name || "";
+            const destinationName = trek.destinationData?.name || "";
             console.log(`Trek ${trek.id} destination:`, {
-                original: trek.destination,
                 fromAssociation: trek.destinationData?.name,
                 final: destinationName,
             });
@@ -243,7 +242,7 @@ exports.getTrekById = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination || trek.destinationData?.name || "",
+            destination: trek.destinationData?.name || "",
             duration: trek.duration || "",
             durationDays: trek.duration_days || "",
             durationNights: trek.duration_nights || "",
@@ -850,10 +849,7 @@ exports.getAllTreks = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination:
-                trek.destination ||
-                trek.destinationData?.name ||
-                "Not specified",
+            destination: trek.destinationData?.name || "Not specified",
             duration: trek.duration || "Not specified",
             price: trek.base_price,
             difficulty: trek.difficulty || "moderate",
@@ -938,7 +934,7 @@ exports.getAllPublicTreks = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination || trek.destinationData?.name || "",
+            destination: trek.destinationData?.name || "",
             duration: trek.duration,
             durationDays: trek.duration_days,
             durationNights: trek.duration_nights,
@@ -1040,7 +1036,7 @@ exports.getPublicTrekById = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination || trek.destinationData?.name || "",
+            destination: trek.destinationData?.name || "",
             duration: trek.duration,
             durationDays: trek.duration_days,
             durationNights: trek.duration_nights,
@@ -1146,7 +1142,7 @@ exports.getTreksByCategory = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination || trek.destinationData?.name || "",
+            destination: trek.destinationData?.name || "",
             duration: trek.duration,
             price: trek.base_price,
             difficulty: trek.difficulty,
@@ -1188,33 +1184,43 @@ exports.searchTreks = async (req, res) => {
             minPrice,
             maxPrice,
             startDate,
-            endDate,
+            destination_id,
+            city_id,
         } = req.query;
 
         const whereClause = { status: "published" };
 
+        // Text search
         if (q) {
             whereClause[Op.or] = [
                 { title: { [Op.like]: `%${q}%` } },
                 { description: { [Op.like]: `%${q}%` } },
-                { destination: { [Op.like]: `%${q}%` } },
             ];
         }
 
+        // Filter by destination_id
+        if (destination_id) {
+            whereClause.destination_id = parseInt(destination_id);
+        }
+
+        // Filter by city_id
+        if (city_id) {
+            whereClause.city_id = parseInt(city_id);
+        }
+
+        // Filter by difficulty
         if (difficulty) whereClause.difficulty = difficulty;
 
+        // Filter by price range
         if (minPrice || maxPrice) {
             whereClause.base_price = {};
             if (minPrice) whereClause.base_price[Op.gte] = parseFloat(minPrice);
             if (maxPrice) whereClause.base_price[Op.lte] = parseFloat(maxPrice);
         }
 
+        // Filter by start date - treks that start on or after the specified date
         if (startDate) {
             whereClause.start_date = { [Op.gte]: new Date(startDate) };
-        }
-
-        if (endDate) {
-            whereClause.end_date = { [Op.lte]: new Date(endDate) };
         }
 
         const treks = await Trek.findAndCountAll({
@@ -1223,6 +1229,11 @@ exports.searchTreks = async (req, res) => {
                 {
                     model: Destination,
                     as: "destinationData",
+                    required: false,
+                },
+                {
+                    model: require("../models").City,
+                    as: "city",
                     required: false,
                 },
                 {
@@ -1244,7 +1255,7 @@ exports.searchTreks = async (req, res) => {
                     limit: 1,
                 },
             ],
-            order: [["created_at", "DESC"]],
+            order: [["start_date", "ASC"]],
             limit: parseInt(limit),
             offset: (parseInt(page) - 1) * parseInt(limit),
         });
@@ -1253,23 +1264,51 @@ exports.searchTreks = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination || trek.destinationData?.name || "",
+            destination: trek.destinationData?.name || "",
+            destination_id: trek.destination_id,
+            city_id: trek.city_id,
+            city: trek.city?.cityName || "",
             duration: trek.duration,
+            durationDays: trek.duration_days,
+            durationNights: trek.duration_nights,
             price: trek.base_price,
             difficulty: trek.difficulty,
+            trekType: trek.trek_type,
+            category: trek.category,
+            maxParticipants: trek.max_participants,
             availableSlots: trek.max_participants - trek.booked_slots,
+            startDate: trek.start_date,
+            endDate: trek.end_date,
+            meetingPoint: trek.meeting_point,
+            meetingTime: trek.meeting_time,
+            status: trek.status,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             vendor: {
                 id: trek.vendor.id,
                 name: trek.vendor.user?.name || "Unknown Vendor",
+                email: trek.vendor.user?.email || "",
+                phone: trek.vendor.user?.phone || "",
                 rating: 4.0, // Default rating since not stored in database
+                status: trek.vendor.status,
             },
+            createdAt: trek.created_at,
+            updatedAt: trek.updated_at,
         }));
 
         res.json({
             success: true,
             data: transformedTreks,
             searchQuery: q,
+            filters: {
+                destination_id: destination_id || null,
+                city_id: city_id || null,
+                startDate: startDate || null,
+                difficulty: difficulty || null,
+                priceRange: {
+                    min: minPrice || null,
+                    max: maxPrice || null,
+                },
+            },
             pagination: {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(treks.count / parseInt(limit)),

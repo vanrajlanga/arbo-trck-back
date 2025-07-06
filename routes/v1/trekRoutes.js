@@ -15,10 +15,14 @@ const validateTrek = [
         .optional()
         .isLength({ max: 1000 })
         .withMessage("Description must not exceed 1000 characters"),
-    body("destination")
+    body("destination_id")
         .optional()
-        .isLength({ max: 100 })
-        .withMessage("Destination must not exceed 100 characters"),
+        .isInt({ min: 1 })
+        .withMessage("Destination ID must be a valid integer"),
+    body("city_id")
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage("City ID must be a valid integer"),
     body("duration")
         .optional()
         .isLength({ max: 50 })

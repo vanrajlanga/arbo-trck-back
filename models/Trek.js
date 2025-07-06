@@ -20,10 +20,6 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 references: { model: "vendors", key: "id" },
             },
-            destination: {
-                type: DataTypes.STRING,
-                allowNull: true,
-            },
             destination_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,

@@ -123,7 +123,7 @@ const getCityById = async (req, res) => {
                         {
                             model: Trek,
                             as: "trek",
-                            attributes: ["id", "title", "destination"],
+                            attributes: ["id", "title"],
                         },
                     ],
                 },
@@ -463,7 +463,7 @@ const getMappings = async (req, res) => {
                 {
                     model: Trek,
                     as: "trek",
-                    attributes: ["id", "title", "destination", "status"],
+                    attributes: ["id", "title"],
                     include: [
                         {
                             model: Vendor,
@@ -539,7 +539,7 @@ const createMapping = async (req, res) => {
                 {
                     model: Trek,
                     as: "trek",
-                    attributes: ["id", "title", "destination", "status"],
+                    attributes: ["id", "title"],
                 },
             ],
         });
@@ -585,7 +585,7 @@ const updateMapping = async (req, res) => {
                 {
                     model: Trek,
                     as: "trek",
-                    attributes: ["id", "title", "destination", "status"],
+                    attributes: ["id", "title"],
                 },
             ],
         });
@@ -676,7 +676,7 @@ const getWeatherLogs = async (req, res) => {
                 {
                     model: Trek,
                     as: "trek",
-                    attributes: ["id", "title", "destination"],
+                    attributes: ["id", "title"],
                     required: false,
                 },
             ],
@@ -727,7 +727,7 @@ const createWeatherLog = async (req, res) => {
                 {
                     model: Trek,
                     as: "trek",
-                    attributes: ["id", "title", "destination"],
+                    attributes: ["id", "title"],
                     required: false,
                 },
             ],

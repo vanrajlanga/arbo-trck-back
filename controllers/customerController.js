@@ -57,7 +57,7 @@ const getVendorCustomers = async (req, res) => {
                         {
                             model: Trek,
                             as: "trek",
-                            attributes: ["id", "title", "destination"],
+                            attributes: ["id", "title"],
                         },
                         {
                             model: PaymentLog,
