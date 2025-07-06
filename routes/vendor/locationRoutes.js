@@ -10,9 +10,11 @@ const {
     createPickupPoint,
     updatePickupPoint,
     deletePickupPoint,
+    getStates,
 } = require("../../controllers/locationController");
 
 // Vendor location routes (full city management, pickup points)
+router.get("/states", getStates);
 router.get("/cities", getCities);
 router.get("/cities/:id", getCityById);
 router.post("/cities", createCity);

@@ -4,80 +4,56 @@ const { Op } = require("sequelize");
 // Get all destinations
 const getAllDestinations = async (req, res) => {
     try {
-        const {
-            page = 1,
-            limit = 10,
-            region,
-            difficulty,
-            trekType,
-            status = "active",
-            search,
-        } = req.query;
+        const { search, status, page = 1, limit = 10 } = req.query;
 
         const whereClause = {};
-
-        if (region) whereClause.region = region;
-        if (difficulty) whereClause.difficulty = difficulty;
-        if (trekType) whereClause.trek_type = trekType;
-        if (status) whereClause.status = status;
 
         if (search) {
             whereClause[Op.or] = [
                 { name: { [Op.like]: `%${search}%` } },
-                { description: { [Op.like]: `%${search}%` } },
                 { state: { [Op.like]: `%${search}%` } },
             ];
         }
 
-        const destinations = await Destination.findAndCountAll({
-            where: whereClause,
-            include: [
-                {
-                    model: Trek,
-                    as: "treks",
-                    attributes: ["id", "title", "status"],
-                    where: { status: "published" },
-                    required: false,
-                },
-            ],
-            order: [["name", "ASC"]],
-            limit: parseInt(limit),
-            offset: (parseInt(page) - 1) * parseInt(limit),
-        });
+        if (status && status !== "all") {
+            whereClause.status = status;
+        }
 
-        // Transform data to include trek count
-        const transformedDestinations = destinations.rows.map(
-            (destination) => ({
-                id: destination.id,
-                name: destination.name,
-                description: destination.description,
-                region: destination.region,
-                state: destination.state,
-                altitude: destination.altitude,
-                bestTimeToVisit: destination.bestTimeToVisit,
-                difficulty: destination.difficulty,
-                trekType: destination.trekType,
-                isPopular: destination.isPopular,
-                status: destination.status,
-                totalTreks: destination.treks?.length || 0,
-                avgRating: destination.avgRating,
-                imageUrl: destination.imageUrl,
-                coordinates: destination.coordinates,
-                createdAt: destination.created_at,
-                updatedAt: destination.updated_at,
-            })
+        const offset = (page - 1) * limit;
+
+        const { count, rows: destinations } = await Destination.findAndCountAll(
+            {
+                where: whereClause,
+                limit: parseInt(limit),
+                offset: offset,
+                order: [["name", "ASC"]],
+            }
         );
+
+        // Calculate statistics
+        const totalDestinations = await Destination.count();
+        const activeDestinations = await Destination.count({
+            where: { status: "active" },
+        });
+        const popularDestinations = await Destination.count({
+            where: { isPopular: true },
+        });
 
         res.json({
             success: true,
-            data: transformedDestinations,
-            pagination: {
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(destinations.count / parseInt(limit)),
-                totalCount: destinations.count,
-                hasMore:
-                    parseInt(page) <
-                    Math.ceil(destinations.count / parseInt(limit)),
+            data: {
+                destinations,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(count / limit),
+                    totalItems: count,
+                    itemsPerPage: parseInt(limit),
+                },
+                statistics: {
+                    totalDestinations,
+                    activeDestinations,
+                    popularDestinations,
+                },
             },
         });
     } catch (error) {
@@ -85,6 +61,7 @@ const getAllDestinations = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch destinations",
+            error: error.message,
         });
     }
 };
@@ -135,32 +112,19 @@ const getDestinationById = async (req, res) => {
 // Create new destination
 const createDestination = async (req, res) => {
     try {
-        const {
-            name,
-            description,
-            region,
-            state,
-            altitude,
-            bestTimeToVisit,
-            difficulty,
-            trekType,
-            isPopular,
-            status,
-            imageUrl,
-            coordinates,
-        } = req.body;
+        const { name, state, isPopular, status } = req.body;
 
         // Validate required fields
-        if (!name || !region) {
+        if (!name) {
             return res.status(400).json({
                 success: false,
-                message: "Name and region are required",
+                message: "Name is required",
             });
         }
 
         // Check if destination with same name already exists
         const existingDestination = await Destination.findOne({
-            where: { name: { [Op.iLike]: name } },
+            where: { name: { [Op.like]: name } },
         });
 
         if (existingDestination) {
@@ -172,17 +136,9 @@ const createDestination = async (req, res) => {
 
         const destination = await Destination.create({
             name,
-            description,
-            region,
             state,
-            altitude,
-            bestTimeToVisit,
-            difficulty,
-            trekType,
             isPopular: isPopular || false,
             status: status || "active",
-            imageUrl,
-            coordinates,
         });
 
         res.status(201).json({
@@ -218,7 +174,7 @@ const updateDestination = async (req, res) => {
         if (updateData.name && updateData.name !== destination.name) {
             const existingDestination = await Destination.findOne({
                 where: {
-                    name: { [Op.iLike]: updateData.name },
+                    name: { [Op.like]: updateData.name },
                     id: { [Op.ne]: id },
                 },
             });
@@ -229,6 +185,11 @@ const updateDestination = async (req, res) => {
                     message: "Destination with this name already exists",
                 });
             }
+        }
+
+        // Convert empty altitude string to null
+        if (updateData.altitude === "") {
+            updateData.altitude = null;
         }
 
         await destination.update(updateData);
@@ -334,34 +295,12 @@ const getPopularDestinations = async (req, res) => {
                 isPopular: true,
                 status: "active",
             },
-            include: [
-                {
-                    model: Trek,
-                    as: "treks",
-                    attributes: ["id", "title", "status"],
-                    where: { status: "published" },
-                    required: false,
-                },
-            ],
             order: [["name", "ASC"]],
         });
 
-        const transformedDestinations = destinations.map((destination) => ({
-            id: destination.id,
-            name: destination.name,
-            description: destination.description,
-            region: destination.region,
-            state: destination.state,
-            difficulty: destination.difficulty,
-            trekType: destination.trekType,
-            totalTreks: destination.treks?.length || 0,
-            avgRating: destination.avgRating,
-            imageUrl: destination.imageUrl,
-        }));
-
         res.json({
             success: true,
-            data: transformedDestinations,
+            data: destinations,
         });
     } catch (error) {
         console.error("Error fetching popular destinations:", error);

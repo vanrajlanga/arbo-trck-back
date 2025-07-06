@@ -2,6 +2,44 @@ const db = require("../models");
 const { City, PickupPoint, Mapping, WeatherLog, Trek, Vendor, User } = db;
 const { Op } = require("sequelize");
 
+// Get States
+const getStates = async (req, res) => {
+    try {
+        // Get unique states from cities table without any filtering
+        const states = await City.findAll({
+            attributes: [
+                [
+                    db.sequelize.fn("DISTINCT", db.sequelize.col("state_name")),
+                    "stateName",
+                ],
+                "region",
+            ],
+            group: ["state_name", "region"],
+            order: [["state_name", "ASC"]],
+            raw: true,
+        });
+
+        // Transform the data to a cleaner format
+        const transformedStates = states.map((state) => ({
+            name: state.stateName,
+            region: state.region,
+        }));
+
+        res.json({
+            success: true,
+            data: transformedStates,
+            count: transformedStates.length,
+        });
+    } catch (error) {
+        console.error("Error fetching states:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch states",
+            error: error.message,
+        });
+    }
+};
+
 // City Management
 const getCities = async (req, res) => {
     try {
@@ -733,4 +771,7 @@ module.exports = {
     // Weather
     getWeatherLogs,
     createWeatherLog,
+
+    // States
+    getStates,
 };

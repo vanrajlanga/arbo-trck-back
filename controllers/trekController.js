@@ -7,6 +7,7 @@ const {
     TrekImage,
     TrekStage,
     Batch,
+    Destination,
 } = require("../models");
 const { validationResult } = require("express-validator");
 const { saveBase64Image, deleteImage } = require("../utils/fileUpload");
@@ -69,6 +70,11 @@ exports.getVendorTreks = async (req, res) => {
             where: { vendor_id: vendorId },
             include: [
                 {
+                    model: Destination,
+                    as: "destinationData",
+                    required: false,
+                },
+                {
                     model: ItineraryItem,
                     as: "itinerary_items",
                     required: false,
@@ -92,55 +98,77 @@ exports.getVendorTreks = async (req, res) => {
             order: [["created_at", "DESC"]],
         });
 
+        // Debug logging
+        console.log(
+            "Raw treks from database:",
+            treks.map((t) => ({
+                id: t.id,
+                title: t.title,
+                destination: t.destination,
+                destination_id: t.destination_id,
+                destinationData: t.destinationData,
+            }))
+        );
+
         // Transform data to match frontend format
-        const transformedTreks = treks.map((trek) => ({
-            id: trek.id,
-            name: trek.title,
-            description: trek.description,
-            destination: trek.destination || "",
-            duration: trek.duration || "",
-            durationDays: trek.duration_days || "",
-            durationNights: trek.duration_nights || "",
-            price: trek.base_price,
-            difficulty: trek.difficulty || "moderate",
-            trekType: trek.trek_type || "",
-            category: trek.category || "",
-            status: trek.status === "published" ? "active" : "draft",
-            slots: {
-                total: trek.max_participants || 20,
-                booked: trek.booked_slots || 0,
-            },
-            startDate: trek.start_date,
-            endDate: trek.end_date,
-            images: trek.images?.map((img) => `/storage/${img.url}`) || [],
-            itinerary:
-                trek.itinerary_items?.map((item) => ({
-                    day: item.day_number,
-                    activities: item.activities || [],
-                })) || [],
-            accommodations:
-                trek.accommodations?.map((acc, index) => ({
-                    night: index + 1,
-                    type: acc.type || "",
-                    name: acc.details?.name || "",
-                    location: acc.details?.location || "",
-                    description: acc.details?.description || "",
-                })) || [],
-            trekStages:
-                trek.trek_stages?.map((stage) => ({
-                    id: stage.id,
-                    name: stage.name,
-                    description: stage.description,
-                    distance: stage.distance,
-                    duration: stage.duration,
-                })) || [],
-            inclusions: parseJsonField(trek.inclusions),
-            exclusions: parseJsonField(trek.exclusions),
-            meetingPoint: trek.meeting_point || "Not specified",
-            meetingTime: trek.meeting_time || "Not specified",
-            createdAt: trek.created_at,
-            updatedAt: trek.updated_at,
-        }));
+        const transformedTreks = treks.map((trek) => {
+            const destinationName =
+                trek.destination || trek.destinationData?.name || "";
+            console.log(`Trek ${trek.id} destination:`, {
+                original: trek.destination,
+                fromAssociation: trek.destinationData?.name,
+                final: destinationName,
+            });
+
+            return {
+                id: trek.id,
+                name: trek.title,
+                description: trek.description,
+                destination: destinationName,
+                duration: trek.duration || "",
+                durationDays: trek.duration_days || "",
+                durationNights: trek.duration_nights || "",
+                price: trek.base_price,
+                difficulty: trek.difficulty || "moderate",
+                trekType: trek.trek_type || "",
+                category: trek.category || "",
+                status: trek.status === "published" ? "active" : "draft",
+                slots: {
+                    total: trek.max_participants || 20,
+                    booked: trek.booked_slots || 0,
+                },
+                startDate: trek.start_date,
+                endDate: trek.end_date,
+                images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+                itinerary:
+                    trek.itinerary_items?.map((item) => ({
+                        day: item.day_number,
+                        activities: item.activities || [],
+                    })) || [],
+                accommodations:
+                    trek.accommodations?.map((acc, index) => ({
+                        night: index + 1,
+                        type: acc.type || "",
+                        name: acc.details?.name || "",
+                        location: acc.details?.location || "",
+                        description: acc.details?.description || "",
+                    })) || [],
+                trekStages:
+                    trek.trek_stages?.map((stage) => ({
+                        id: stage.id,
+                        name: stage.name,
+                        description: stage.description,
+                        distance: stage.distance,
+                        duration: stage.duration,
+                    })) || [],
+                inclusions: parseJsonField(trek.inclusions),
+                exclusions: parseJsonField(trek.exclusions),
+                meetingPoint: trek.meeting_point || "Not specified",
+                meetingTime: trek.meeting_time || "Not specified",
+                createdAt: trek.created_at,
+                updatedAt: trek.updated_at,
+            };
+        });
 
         res.json({
             success: true,
@@ -176,6 +204,11 @@ exports.getTrekById = async (req, res) => {
             },
             include: [
                 {
+                    model: Destination,
+                    as: "destinationData",
+                    required: false,
+                },
+                {
                     model: ItineraryItem,
                     as: "itinerary_items",
                     required: false,
@@ -210,7 +243,7 @@ exports.getTrekById = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination || "",
+            destination: trek.destination || trek.destinationData?.name || "",
             duration: trek.duration || "",
             durationDays: trek.duration_days || "",
             durationNights: trek.duration_nights || "",
@@ -789,6 +822,11 @@ exports.getAllTreks = async (req, res) => {
         const treks = await Trek.findAll({
             include: [
                 {
+                    model: Destination,
+                    as: "destinationData",
+                    required: false,
+                },
+                {
                     model: Vendor,
                     as: "vendor",
                     include: [
@@ -812,7 +850,10 @@ exports.getAllTreks = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination || "Not specified",
+            destination:
+                trek.destination ||
+                trek.destinationData?.name ||
+                "Not specified",
             duration: trek.duration || "Not specified",
             price: trek.base_price,
             difficulty: trek.difficulty || "moderate",
@@ -865,6 +906,11 @@ exports.getAllPublicTreks = async (req, res) => {
             where: whereClause,
             include: [
                 {
+                    model: Destination,
+                    as: "destinationData",
+                    required: false,
+                },
+                {
                     model: Vendor,
                     as: "vendor",
                     attributes: ["id", "status"],
@@ -892,7 +938,7 @@ exports.getAllPublicTreks = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination,
+            destination: trek.destination || trek.destinationData?.name || "",
             duration: trek.duration,
             durationDays: trek.duration_days,
             durationNights: trek.duration_nights,
@@ -943,6 +989,11 @@ exports.getPublicTrekById = async (req, res) => {
             },
             include: [
                 {
+                    model: Destination,
+                    as: "destinationData",
+                    required: false,
+                },
+                {
                     model: Vendor,
                     as: "vendor",
                     attributes: ["id", "status"],
@@ -989,7 +1040,7 @@ exports.getPublicTrekById = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination,
+            destination: trek.destination || trek.destinationData?.name || "",
             duration: trek.duration,
             durationDays: trek.duration_days,
             durationNights: trek.duration_nights,
@@ -1063,6 +1114,11 @@ exports.getTreksByCategory = async (req, res) => {
             },
             include: [
                 {
+                    model: Destination,
+                    as: "destinationData",
+                    required: false,
+                },
+                {
                     model: Vendor,
                     as: "vendor",
                     attributes: ["id", "status"],
@@ -1090,7 +1146,7 @@ exports.getTreksByCategory = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination,
+            destination: trek.destination || trek.destinationData?.name || "",
             duration: trek.duration,
             price: trek.base_price,
             difficulty: trek.difficulty,
@@ -1165,6 +1221,11 @@ exports.searchTreks = async (req, res) => {
             where: whereClause,
             include: [
                 {
+                    model: Destination,
+                    as: "destinationData",
+                    required: false,
+                },
+                {
                     model: Vendor,
                     as: "vendor",
                     attributes: ["id", "status"],
@@ -1192,7 +1253,7 @@ exports.searchTreks = async (req, res) => {
             id: trek.id,
             name: trek.title,
             description: trek.description,
-            destination: trek.destination,
+            destination: trek.destination || trek.destinationData?.name || "",
             duration: trek.duration,
             price: trek.base_price,
             difficulty: trek.difficulty,
