@@ -17,17 +17,9 @@ router.get("/popular", async (req, res) => {
             attributes: [
                 "id",
                 "name",
-                "description",
-                "region",
                 "state",
-                "altitude",
-                "bestTimeToVisit",
-                "difficulty",
-                "trekType",
                 "isPopular",
                 "status",
-                "imageUrl",
-                "coordinates",
                 "created_at",
                 "updated_at",
             ],
@@ -70,32 +62,24 @@ router.get("/search", async (req, res) => {
         }
 
         // Build where clause
-        const whereClause = {
-            status: status,
-        };
-
-        if (region) {
-            whereClause.region = region;
-        }
-
-        if (difficulty) {
-            whereClause.difficulty = difficulty;
-        }
-
-        if (trekType) {
-            whereClause.trekType = trekType;
-        }
+        const whereClause = {};
 
         if (isPopular !== undefined) {
             whereClause.isPopular = isPopular === "true";
         }
 
+        if (status) {
+            whereClause.status = status;
+        }
+
+        if (state) {
+            whereClause.state = state;
+        }
+
         // Add search conditions
         const searchConditions = [
             { name: { [require("sequelize").Op.like]: `%${q}%` } },
-            { description: { [require("sequelize").Op.like]: `%${q}%` } },
             { state: { [require("sequelize").Op.like]: `%${q}%` } },
-            { region: { [require("sequelize").Op.like]: `%${q}%` } },
         ];
 
         const destinations = await Destination.findAll({
@@ -114,17 +98,9 @@ router.get("/search", async (req, res) => {
             attributes: [
                 "id",
                 "name",
-                "description",
-                "region",
                 "state",
-                "altitude",
-                "bestTimeToVisit",
-                "difficulty",
-                "trekType",
                 "isPopular",
                 "status",
-                "imageUrl",
-                "coordinates",
                 "created_at",
                 "updated_at",
             ],
@@ -184,17 +160,9 @@ router.get("/region/:region", async (req, res) => {
             attributes: [
                 "id",
                 "name",
-                "description",
-                "region",
                 "state",
-                "altitude",
-                "bestTimeToVisit",
-                "difficulty",
-                "trekType",
                 "isPopular",
                 "status",
-                "imageUrl",
-                "coordinates",
                 "created_at",
                 "updated_at",
             ],
@@ -233,9 +201,7 @@ router.get("/region/:region", async (req, res) => {
 router.get("/", async (req, res) => {
     try {
         const {
-            region,
-            difficulty,
-            trekType,
+            state,
             isPopular,
             status = "active",
             limit = 50,
@@ -245,24 +211,16 @@ router.get("/", async (req, res) => {
         // Build where clause
         const whereClause = {};
 
-        if (region) {
-            whereClause.region = region;
-        }
-
-        if (difficulty) {
-            whereClause.difficulty = difficulty;
-        }
-
-        if (trekType) {
-            whereClause.trekType = trekType;
-        }
-
         if (isPopular !== undefined) {
             whereClause.isPopular = isPopular === "true";
         }
 
         if (status) {
             whereClause.status = status;
+        }
+
+        if (state) {
+            whereClause.state = state;
         }
 
         const destinations = await Destination.findAll({
@@ -276,17 +234,9 @@ router.get("/", async (req, res) => {
             attributes: [
                 "id",
                 "name",
-                "description",
-                "region",
                 "state",
-                "altitude",
-                "bestTimeToVisit",
-                "difficulty",
-                "trekType",
                 "isPopular",
                 "status",
-                "imageUrl",
-                "coordinates",
                 "created_at",
                 "updated_at",
             ],
@@ -324,17 +274,9 @@ router.get("/:id", async (req, res) => {
             attributes: [
                 "id",
                 "name",
-                "description",
-                "region",
                 "state",
-                "altitude",
-                "bestTimeToVisit",
-                "difficulty",
-                "trekType",
                 "isPopular",
                 "status",
-                "imageUrl",
-                "coordinates",
                 "created_at",
                 "updated_at",
             ],
