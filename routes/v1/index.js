@@ -10,6 +10,7 @@ const locationRoutes = require("./locationRoutes");
 const bookingRoutes = require("./bookingRoutes");
 const customerRoutes = require("./customerRoutes");
 const destinationRoutes = require("./destinationRoutes");
+const couponRoutes = require("./couponRoutes");
 
 // New customer-centric routes
 const customerAuthRoutes = require("./customerAuthRoutes");
@@ -25,6 +26,7 @@ router.use("/locations", locationRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/customers", customerRoutes);
 router.use("/destinations", destinationRoutes);
+router.use("/coupons", couponRoutes);
 
 // Mount new customer-centric routes (for mobile app)
 router.use("/customer/auth", customerAuthRoutes);
@@ -46,6 +48,7 @@ router.get("/", (req, res) => {
             public_treks: "/api/v1/treks",
             locations: "/api/v1/locations",
             destinations: "/api/v1/destinations",
+            coupons: "/api/v1/coupons",
 
             // Admin/Vendor endpoints (web interface)
             admin_auth: "/api/v1/auth",

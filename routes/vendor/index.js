@@ -10,6 +10,7 @@ const customerRoutes = require("./customerRoutes");
 const locationRoutes = require("./locationRoutes");
 const analyticsRoutes = require("./analyticsRoutes");
 const destinationRoutes = require("./destinationRoutes");
+const couponRoutes = require("./couponRoutes");
 
 // Apply auth middleware to all vendor routes
 router.use(authMiddleware);
@@ -22,6 +23,7 @@ router.use("/customers", customerRoutes);
 router.use("/locations", locationRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/destinations", destinationRoutes);
+router.use("/coupons", couponRoutes);
 
 // Vendor API info
 router.get("/", (req, res) => {

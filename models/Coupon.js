@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
                 autoIncrement: true,
             },
             code: { type: DataTypes.STRING, allowNull: false },
+            description: { type: DataTypes.STRING, allowNull: true },
             discount_type: {
                 type: DataTypes.ENUM("percentage", "fixed"),
                 allowNull: false,
@@ -17,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
             },
             min_amount: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+            max_discount_amount: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+            },
             max_uses: { type: DataTypes.INTEGER, allowNull: true },
             current_uses: { type: DataTypes.INTEGER, defaultValue: 0 },
             valid_from: { type: DataTypes.DATE, allowNull: false },

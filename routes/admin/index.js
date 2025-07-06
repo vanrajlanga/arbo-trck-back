@@ -12,6 +12,7 @@ const bookingRoutes = require("./bookingRoutes");
 const customerRoutes = require("./customerRoutes");
 const analyticsRoutes = require("./analyticsRoutes");
 const systemRoutes = require("./systemRoutes");
+const couponRoutes = require("./couponRoutes");
 
 // Apply auth middleware to all admin routes
 router.use(authMiddleware);
@@ -26,6 +27,7 @@ router.use("/bookings", bookingRoutes);
 router.use("/customers", customerRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/system", systemRoutes);
+router.use("/coupons", couponRoutes);
 
 // Admin API info
 router.get("/", (req, res) => {

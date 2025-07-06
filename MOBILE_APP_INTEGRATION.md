@@ -46,7 +46,15 @@ GET /api/v1/destinations/:id                # Destination details
 GET /api/v1/destinations/region/:region     # By region
 ```
 
-### 4. Traveler Management (Protected)
+### 4. Coupon Discovery (Public)
+
+```bash
+GET /api/v1/coupons                    # All active coupons
+GET /api/v1/coupons/code/:code         # Get coupon by code
+POST /api/v1/coupons/validate          # Validate coupon for booking
+```
+
+### 5. Traveler Management (Protected)
 
 ```bash
 GET    /api/v1/customer/travelers     # List travelers
@@ -56,7 +64,7 @@ PUT    /api/v1/customer/travelers/:id # Update traveler
 DELETE /api/v1/customer/travelers/:id # Delete traveler
 ```
 
-### 5. Booking Management (Protected)
+### 6. Booking Management (Protected)
 
 ```bash
 POST /api/v1/customer/bookings           # Create booking
@@ -65,7 +73,7 @@ GET  /api/v1/customer/bookings/:id       # Booking details
 PUT  /api/v1/customer/bookings/:id/cancel # Cancel booking
 ```
 
-### 6. Locations
+### 7. Locations
 
 ```bash
 GET /api/v1/locations/cities  # Available cities
@@ -96,6 +104,8 @@ All APIs tested and working:
 -   ✅ **Popular Destinations: Working**
 -   ✅ **Destination Search: Working**
 -   ✅ **Destination by Region: Working**
+-   ✅ **Coupons: Working**
+-   ✅ **Coupon Validation: Working**
 -   ✅ Cities: Working
 -   ✅ Protected Routes: Working
 -   ✅ Authentication: Working
@@ -143,6 +153,30 @@ curl http://localhost:5000/api/v1/destinations/region/North
 
 ```bash
 curl http://localhost:5000/api/v1/destinations/1
+```
+
+### Get All Active Coupons
+
+```bash
+curl http://localhost:5000/api/v1/coupons
+```
+
+### Get Coupon by Code
+
+```bash
+curl http://localhost:5000/api/v1/coupons/code/SAVE20
+```
+
+### Validate Coupon
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "SAVE20",
+    "amount": 5000
+  }' \
+  http://localhost:5000/api/v1/coupons/validate
 ```
 
 ### Get All Treks
@@ -227,6 +261,95 @@ GET /api/v1/destinations?limit=10&offset=0
 
 ---
 
+## 🎯 Coupon API Features
+
+### Available Endpoints
+
+```bash
+# Get all active coupons
+GET /api/v1/coupons
+
+# Get coupon by specific code
+GET /api/v1/coupons/code/SAVE20
+
+# Validate coupon for booking
+POST /api/v1/coupons/validate
+```
+
+### Coupon Response Format
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "code": "SAVE20",
+            "description": "Get 20% off on your first booking",
+            "discount_type": "percentage",
+            "discount_value": 20.0,
+            "min_order_amount": 1000.0,
+            "max_discount_amount": 500.0,
+            "usage_limit": 100,
+            "used_count": 25,
+            "valid_from": "2025-07-01T00:00:00.000Z",
+            "valid_until": "2025-12-31T23:59:59.000Z",
+            "is_active": true,
+            "status": "active",
+            "created_at": "2025-07-06T09:31:33.000Z",
+            "updated_at": "2025-07-06T09:31:33.000Z"
+        }
+    ],
+    "pagination": {
+        "total": 5,
+        "limit": 50,
+        "offset": 0,
+        "hasMore": false
+    }
+}
+```
+
+### Coupon Validation Response
+
+```json
+{
+    "success": true,
+    "data": {
+        "coupon": {
+            "id": 1,
+            "code": "SAVE20",
+            "description": "Get 20% off on your first booking",
+            "discount_type": "percentage",
+            "discount_value": 20.0,
+            "min_order_amount": 1000.0,
+            "max_discount_amount": 500.0,
+            "usage_limit": 100,
+            "used_count": 25,
+            "valid_from": "2025-07-01T00:00:00.000Z",
+            "valid_until": "2025-12-31T23:59:59.000Z",
+            "is_active": true,
+            "status": "active"
+        },
+        "originalAmount": 5000,
+        "discountAmount": 500,
+        "finalAmount": 4500,
+        "savings": 500
+    }
+}
+```
+
+### Filtering Options
+
+```bash
+# Pagination
+GET /api/v1/coupons?limit=10&offset=0
+
+# Get specific coupon by code
+GET /api/v1/coupons/code/SAVE20
+```
+
+---
+
 ## 🛠️ Development Setup
 
 1. **Backend Server**: Running on port 5000
@@ -244,5 +367,6 @@ GET /api/v1/destinations?limit=10&offset=0
 -   Protected routes are secured
 -   Error handling is implemented
 -   **Destination APIs are fully functional**
+-   **Coupon APIs are fully functional**
 
 **Status: ✅ READY FOR MOBILE APP INTEGRATION**
