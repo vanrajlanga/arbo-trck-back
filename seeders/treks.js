@@ -73,6 +73,10 @@ const seedTreks = async () => {
                     "Tips for guides and porters",
                 ]),
                 status: "published",
+                rating: 4.5,
+                discount_value: 10.0,
+                discount_type: "percentage",
+                has_discount: true,
             },
             {
                 title: "Kedarnath Temple Trek",
@@ -109,6 +113,10 @@ const seedTreks = async () => {
                     "Donations at temple",
                 ]),
                 status: "published",
+                rating: 4.8,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
             {
                 title: "Rishikesh Adventure Trek",
@@ -145,6 +153,10 @@ const seedTreks = async () => {
                     "Tips for instructors",
                 ]),
                 status: "published",
+                rating: 4.2,
+                discount_value: 500.0,
+                discount_type: "fixed",
+                has_discount: true,
             },
 
             // Himachal Pradesh Treks
@@ -183,6 +195,10 @@ const seedTreks = async () => {
                     "Tips for guides",
                 ]),
                 status: "published",
+                rating: 4.6,
+                discount_value: 15.0,
+                discount_type: "percentage",
+                has_discount: true,
             },
             {
                 title: "Triund Trek",
@@ -219,6 +235,10 @@ const seedTreks = async () => {
                     "Tips for guides",
                 ]),
                 status: "published",
+                rating: 4.3,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
 
             // Ladakh Treks
@@ -257,6 +277,10 @@ const seedTreks = async () => {
                     "Additional medical expenses",
                 ]),
                 status: "published",
+                rating: 4.7,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
             {
                 title: "Khardungla Pass Trek",
@@ -293,6 +317,10 @@ const seedTreks = async () => {
                     "Additional medical expenses",
                 ]),
                 status: "published",
+                rating: 4.9,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
 
             // Sikkim Treks
@@ -331,6 +359,10 @@ const seedTreks = async () => {
                     "Tips for guides",
                 ]),
                 status: "published",
+                rating: 4.4,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
 
             // Maharashtra Treks
@@ -369,6 +401,10 @@ const seedTreks = async () => {
                     "Tips for guides",
                 ]),
                 status: "published",
+                rating: 4.2,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
 
             // Karnataka Treks
@@ -407,6 +443,10 @@ const seedTreks = async () => {
                     "Tips for guides",
                 ]),
                 status: "published",
+                rating: 4.6,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
 
             // Kerala Treks
@@ -445,6 +485,10 @@ const seedTreks = async () => {
                     "Tips for guides",
                 ]),
                 status: "published",
+                rating: 4.3,
+                discount_value: 0.0,
+                discount_type: "percentage",
+                has_discount: false,
             },
         ];
 

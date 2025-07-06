@@ -134,6 +134,30 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM("draft", "published", "archived"),
                 defaultValue: "draft",
             },
+            rating: {
+                type: DataTypes.DECIMAL(3, 2),
+                allowNull: true,
+                defaultValue: 0.0,
+                comment: "Average rating of the trek (0.00 to 5.00)",
+            },
+            discount_value: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0.0,
+                comment: "Discount amount or percentage value",
+            },
+            discount_type: {
+                type: DataTypes.ENUM("percentage", "fixed"),
+                allowNull: true,
+                defaultValue: "percentage",
+                comment: "Type of discount: percentage or fixed amount",
+            },
+            has_discount: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+                comment: "Whether the trek has an active discount",
+            },
         },
         {
             tableName: "treks",

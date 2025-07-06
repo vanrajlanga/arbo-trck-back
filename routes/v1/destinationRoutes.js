@@ -204,7 +204,7 @@ router.get("/", async (req, res) => {
             state,
             isPopular,
             status = "active",
-            limit = 50,
+            limit = 100,
             offset = 0,
         } = req.query;
 

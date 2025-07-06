@@ -9,6 +9,7 @@ const {
     Batch,
     Destination,
     City,
+    State,
 } = require("../models");
 const { validationResult } = require("express-validator");
 const { saveBase64Image, deleteImage } = require("../utils/fileUpload");
@@ -16,14 +17,14 @@ const { Op } = require("sequelize");
 
 // Helper function to parse JSON strings or return arrays
 const parseJsonField = (field) => {
+    if (!field) return [];
     if (Array.isArray(field)) return field;
-    if (typeof field === "string" && field.trim()) {
+    if (typeof field === "string") {
         try {
             const parsed = JSON.parse(field);
             return Array.isArray(parsed) ? parsed : [];
-        } catch (error) {
-            // If JSON parsing fails, try splitting by newlines
-            return field.split("\n").filter((item) => item.trim());
+        } catch (e) {
+            return [];
         }
     }
     return [];
@@ -31,28 +32,32 @@ const parseJsonField = (field) => {
 
 // Helper function to ensure proper JSON array storage
 const ensureJsonArray = (data) => {
-    console.log("ensureJsonArray input:", data, "type:", typeof data);
-
-    if (!data) return null;
-    if (Array.isArray(data)) {
-        console.log("ensureJsonArray output (already array):", data);
-        return data;
-    }
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
     if (typeof data === "string") {
         try {
             const parsed = JSON.parse(data);
-            const result = Array.isArray(parsed) ? parsed : [data];
-            console.log("ensureJsonArray output (parsed string):", result);
-            return result;
+            return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
-            const result = [data];
-            console.log("ensureJsonArray output (string to array):", result);
-            return result;
+            return [];
         }
     }
-    const result = [data];
-    console.log("ensureJsonArray output (fallback):", result);
-    return result;
+    return [];
+};
+
+// Helper function to generate discount text
+const generateDiscountText = (hasDiscount, discountValue, discountType) => {
+    if (!hasDiscount || !discountValue || discountValue <= 0) {
+        return null;
+    }
+
+    if (discountType === "percentage") {
+        return `${Math.round(discountValue)}% OFF`;
+    } else if (discountType === "fixed") {
+        return `₹${Math.round(discountValue)} OFF`;
+    }
+
+    return null;
 };
 
 // Get all treks for a vendor
@@ -74,6 +79,18 @@ exports.getVendorTreks = async (req, res) => {
                     model: Destination,
                     as: "destinationData",
                     required: false,
+                },
+                {
+                    model: City,
+                    as: "city",
+                    required: false,
+                    include: [
+                        {
+                            model: State,
+                            as: "state",
+                            required: false,
+                        },
+                    ],
                 },
                 {
                     model: ItineraryItem,
@@ -124,6 +141,20 @@ exports.getVendorTreks = async (req, res) => {
                 name: trek.title,
                 description: trek.description,
                 destination: destinationName,
+                destination_id: trek.destination_id,
+                city_id: trek.city_id,
+                city: trek.city
+                    ? {
+                          id: trek.city.id,
+                          cityName: trek.city.cityName,
+                          state: trek.city.state
+                              ? {
+                                    id: trek.city.state.id,
+                                    name: trek.city.state.name,
+                                }
+                              : null,
+                      }
+                    : null,
                 duration: trek.duration || "",
                 durationDays: trek.duration_days || "",
                 durationNights: trek.duration_nights || "",
@@ -164,6 +195,17 @@ exports.getVendorTreks = async (req, res) => {
                 exclusions: parseJsonField(trek.exclusions),
                 meetingPoint: trek.meeting_point || "Not specified",
                 meetingTime: trek.meeting_time || "Not specified",
+                rating: parseFloat(trek.rating) || 0.0,
+                discount: {
+                    hasDiscount: trek.has_discount || false,
+                    value: parseFloat(trek.discount_value) || 0.0,
+                    type: trek.discount_type || "percentage",
+                },
+                discountText: generateDiscountText(
+                    trek.has_discount,
+                    trek.discount_value,
+                    trek.discount_type
+                ),
                 createdAt: trek.created_at,
                 updatedAt: trek.updated_at,
             };
@@ -208,6 +250,18 @@ exports.getTrekById = async (req, res) => {
                     required: false,
                 },
                 {
+                    model: City,
+                    as: "city",
+                    required: false,
+                    include: [
+                        {
+                            model: State,
+                            as: "state",
+                            required: false,
+                        },
+                    ],
+                },
+                {
                     model: ItineraryItem,
                     as: "itinerary_items",
                     required: false,
@@ -243,6 +297,20 @@ exports.getTrekById = async (req, res) => {
             name: trek.title,
             description: trek.description,
             destination: trek.destinationData?.name || "",
+            destination_id: trek.destination_id,
+            city_id: trek.city_id,
+            city: trek.city
+                ? {
+                      id: trek.city.id,
+                      cityName: trek.city.cityName,
+                      state: trek.city.state
+                          ? {
+                                id: trek.city.state.id,
+                                name: trek.city.state.name,
+                            }
+                          : null,
+                  }
+                : null,
             duration: trek.duration || "",
             durationDays: trek.duration_days || "",
             durationNights: trek.duration_nights || "",
@@ -283,6 +351,17 @@ exports.getTrekById = async (req, res) => {
             exclusions: parseJsonField(trek.exclusions),
             meetingPoint: trek.meeting_point || "",
             meetingTime: trek.meeting_time || "",
+            rating: parseFloat(trek.rating) || 0.0,
+            discount: {
+                hasDiscount: trek.has_discount || false,
+                value: parseFloat(trek.discount_value) || 0.0,
+                type: trek.discount_type || "percentage",
+            },
+            discountText: generateDiscountText(
+                trek.has_discount,
+                trek.discount_value,
+                trek.discount_type
+            ),
             createdAt: trek.created_at,
             updatedAt: trek.updated_at,
         };
@@ -356,6 +435,10 @@ exports.createTrek = async (req, res) => {
             trekStages,
             images,
             status,
+            rating,
+            discountValue,
+            discountType,
+            hasDiscount,
         } = req.body;
 
         // Create the trek
@@ -379,6 +462,10 @@ exports.createTrek = async (req, res) => {
             meeting_point: meetingPoint,
             meeting_time: meetingTime,
             status: status === "active" ? "published" : "draft",
+            rating: rating || 0.0,
+            discount_value: discountValue || 0.0,
+            discount_type: discountType || "percentage",
+            has_discount: hasDiscount || false,
         });
 
         console.log(
@@ -530,6 +617,10 @@ exports.updateTrek = async (req, res) => {
             trekStages,
             images,
             status,
+            rating,
+            discountValue,
+            discountType,
+            hasDiscount,
         } = req.body;
 
         // Find the trek
@@ -567,6 +658,10 @@ exports.updateTrek = async (req, res) => {
             meeting_point: meetingPoint,
             meeting_time: meetingTime,
             status: status === "active" ? "published" : "draft",
+            rating: rating || 0.0,
+            discount_value: discountValue || 0.0,
+            discount_type: discountType || "percentage",
+            has_discount: hasDiscount || false,
         });
 
         // Update itinerary items
@@ -945,6 +1040,17 @@ exports.getAllPublicTreks = async (req, res) => {
             startDate: trek.start_date,
             endDate: trek.end_date,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+            rating: parseFloat(trek.rating) || 0.0,
+            discount: {
+                hasDiscount: trek.has_discount || false,
+                value: parseFloat(trek.discount_value) || 0.0,
+                type: trek.discount_type || "percentage",
+            },
+            discountText: generateDiscountText(
+                trek.has_discount,
+                trek.discount_value,
+                trek.discount_type
+            ),
             vendor: {
                 id: trek.vendor.id,
                 name: trek.vendor.user?.name || "Unknown Vendor",
@@ -1037,6 +1143,20 @@ exports.getPublicTrekById = async (req, res) => {
             name: trek.title,
             description: trek.description,
             destination: trek.destinationData?.name || "",
+            destination_id: trek.destination_id,
+            city_id: trek.city_id,
+            city: trek.city
+                ? {
+                      id: trek.city.id,
+                      cityName: trek.city.cityName,
+                      state: trek.city.state
+                          ? {
+                                id: trek.city.state.id,
+                                name: trek.city.state.name,
+                            }
+                          : null,
+                  }
+                : null,
             duration: trek.duration,
             durationDays: trek.duration_days,
             durationNights: trek.duration_nights,
@@ -1072,6 +1192,17 @@ exports.getPublicTrekById = async (req, res) => {
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
+            rating: parseFloat(trek.rating) || 0.0,
+            discount: {
+                hasDiscount: trek.has_discount || false,
+                value: parseFloat(trek.discount_value) || 0.0,
+                type: trek.discount_type || "percentage",
+            },
+            discountText: generateDiscountText(
+                trek.has_discount,
+                trek.discount_value,
+                trek.discount_type
+            ),
             vendor: {
                 id: trek.vendor.id,
                 name: trek.vendor.user?.name || "Unknown Vendor",
@@ -1148,6 +1279,17 @@ exports.getTreksByCategory = async (req, res) => {
             difficulty: trek.difficulty,
             availableSlots: trek.max_participants - trek.booked_slots,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+            rating: parseFloat(trek.rating) || 0.0,
+            discount: {
+                hasDiscount: trek.has_discount || false,
+                value: parseFloat(trek.discount_value) || 0.0,
+                type: trek.discount_type || "percentage",
+            },
+            discountText: generateDiscountText(
+                trek.has_discount,
+                trek.discount_value,
+                trek.discount_type
+            ),
             vendor: {
                 id: trek.vendor.id,
                 name: trek.vendor.user?.name || "Unknown Vendor",
@@ -1232,9 +1374,16 @@ exports.searchTreks = async (req, res) => {
                     required: false,
                 },
                 {
-                    model: require("../models").City,
+                    model: City,
                     as: "city",
                     required: false,
+                    include: [
+                        {
+                            model: State,
+                            as: "state",
+                            required: false,
+                        },
+                    ],
                 },
                 {
                     model: Vendor,
@@ -1283,6 +1432,17 @@ exports.searchTreks = async (req, res) => {
             meetingTime: trek.meeting_time,
             status: trek.status,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+            rating: parseFloat(trek.rating) || 0.0,
+            discount: {
+                hasDiscount: trek.has_discount || false,
+                value: parseFloat(trek.discount_value) || 0.0,
+                type: trek.discount_type || "percentage",
+            },
+            discountText: generateDiscountText(
+                trek.has_discount,
+                trek.discount_value,
+                trek.discount_type
+            ),
             vendor: {
                 id: trek.vendor.id,
                 name: trek.vendor.user?.name || "Unknown Vendor",

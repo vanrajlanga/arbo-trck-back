@@ -4,7 +4,7 @@ const { Op } = require("sequelize");
 // Get all destinations
 const getAllDestinations = async (req, res) => {
     try {
-        const { search, status, page = 1, limit = 10 } = req.query;
+        const { search, status, page = 1, limit = 100 } = req.query;
 
         const whereClause = {};
 

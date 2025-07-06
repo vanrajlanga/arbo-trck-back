@@ -52,6 +52,22 @@ const validateTrek = [
         .optional()
         .isLength({ max: 50 })
         .withMessage("Meeting time must not exceed 50 characters"),
+    body("rating")
+        .optional()
+        .isFloat({ min: 0, max: 5 })
+        .withMessage("Rating must be between 0 and 5"),
+    body("discountValue")
+        .optional()
+        .isFloat({ min: 0 })
+        .withMessage("Discount value must be a positive number"),
+    body("discountType")
+        .optional()
+        .isIn(["percentage", "fixed"])
+        .withMessage("Discount type must be percentage or fixed"),
+    body("hasDiscount")
+        .optional()
+        .isBoolean()
+        .withMessage("Has discount must be a boolean value"),
 ];
 
 // Vendor trek routes
