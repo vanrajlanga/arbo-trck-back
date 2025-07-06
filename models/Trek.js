@@ -196,6 +196,25 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 comment: "JSON array of other policies - optional",
             },
+            activities: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                get() {
+                    const rawValue = this.getDataValue("activities");
+                    if (!rawValue) return [];
+                    if (Array.isArray(rawValue)) return rawValue;
+                    if (typeof rawValue === "string") {
+                        try {
+                            const parsed = JSON.parse(rawValue);
+                            return Array.isArray(parsed) ? parsed : [];
+                        } catch (e) {
+                            return [];
+                        }
+                    }
+                    return [];
+                },
+                comment: "JSON array of trek activities",
+            },
         },
         {
             tableName: "treks",
