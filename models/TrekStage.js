@@ -32,6 +32,12 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            means_of_transport: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment:
+                    "Means of transport for this trek stage (e.g., walking, bus, train, flight, etc.)",
+            },
         },
         {
             tableName: "trek_stages",
