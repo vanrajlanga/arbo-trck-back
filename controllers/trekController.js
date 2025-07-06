@@ -196,11 +196,9 @@ exports.getVendorTreks = async (req, res) => {
                 meetingPoint: trek.meeting_point || "Not specified",
                 meetingTime: trek.meeting_time || "Not specified",
                 rating: parseFloat(trek.rating) || 0.0,
-                discount: {
-                    hasDiscount: trek.has_discount || false,
-                    value: parseFloat(trek.discount_value) || 0.0,
-                    type: trek.discount_type || "percentage",
-                },
+                hasDiscount: trek.has_discount || false,
+                discountValue: parseFloat(trek.discount_value) || 0.0,
+                discountType: trek.discount_type || "percentage",
                 discountText: generateDiscountText(
                     trek.has_discount,
                     trek.discount_value,
@@ -352,11 +350,9 @@ exports.getTrekById = async (req, res) => {
             meetingPoint: trek.meeting_point || "",
             meetingTime: trek.meeting_time || "",
             rating: parseFloat(trek.rating) || 0.0,
-            discount: {
-                hasDiscount: trek.has_discount || false,
-                value: parseFloat(trek.discount_value) || 0.0,
-                type: trek.discount_type || "percentage",
-            },
+            hasDiscount: trek.has_discount || false,
+            discountValue: parseFloat(trek.discount_value) || 0.0,
+            discountType: trek.discount_type || "percentage",
             discountText: generateDiscountText(
                 trek.has_discount,
                 trek.discount_value,
@@ -1041,11 +1037,9 @@ exports.getAllPublicTreks = async (req, res) => {
             endDate: trek.end_date,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             rating: parseFloat(trek.rating) || 0.0,
-            discount: {
-                hasDiscount: trek.has_discount || false,
-                value: parseFloat(trek.discount_value) || 0.0,
-                type: trek.discount_type || "percentage",
-            },
+            hasDiscount: trek.has_discount || false,
+            discountValue: parseFloat(trek.discount_value) || 0.0,
+            discountType: trek.discount_type || "percentage",
             discountText: generateDiscountText(
                 trek.has_discount,
                 trek.discount_value,
@@ -1193,11 +1187,9 @@ exports.getPublicTrekById = async (req, res) => {
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
             rating: parseFloat(trek.rating) || 0.0,
-            discount: {
-                hasDiscount: trek.has_discount || false,
-                value: parseFloat(trek.discount_value) || 0.0,
-                type: trek.discount_type || "percentage",
-            },
+            hasDiscount: trek.has_discount || false,
+            discountValue: parseFloat(trek.discount_value) || 0.0,
+            discountType: trek.discount_type || "percentage",
             discountText: generateDiscountText(
                 trek.has_discount,
                 trek.discount_value,
@@ -1280,11 +1272,9 @@ exports.getTreksByCategory = async (req, res) => {
             availableSlots: trek.max_participants - trek.booked_slots,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             rating: parseFloat(trek.rating) || 0.0,
-            discount: {
-                hasDiscount: trek.has_discount || false,
-                value: parseFloat(trek.discount_value) || 0.0,
-                type: trek.discount_type || "percentage",
-            },
+            hasDiscount: trek.has_discount || false,
+            discountValue: parseFloat(trek.discount_value) || 0.0,
+            discountType: trek.discount_type || "percentage",
             discountText: generateDiscountText(
                 trek.has_discount,
                 trek.discount_value,
@@ -1433,11 +1423,9 @@ exports.searchTreks = async (req, res) => {
             status: trek.status,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             rating: parseFloat(trek.rating) || 0.0,
-            discount: {
-                hasDiscount: trek.has_discount || false,
-                value: parseFloat(trek.discount_value) || 0.0,
-                type: trek.discount_type || "percentage",
-            },
+            hasDiscount: trek.has_discount || false,
+            discountValue: parseFloat(trek.discount_value) || 0.0,
+            discountType: trek.discount_type || "percentage",
             discountText: generateDiscountText(
                 trek.has_discount,
                 trek.discount_value,
