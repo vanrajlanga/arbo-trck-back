@@ -158,6 +158,44 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: false,
                 comment: "Whether the trek has an active discount",
             },
+            cancellation_policies: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                get() {
+                    const rawValue = this.getDataValue("cancellation_policies");
+                    if (!rawValue) return [];
+                    if (Array.isArray(rawValue)) return rawValue;
+                    if (typeof rawValue === "string") {
+                        try {
+                            const parsed = JSON.parse(rawValue);
+                            return Array.isArray(parsed) ? parsed : [];
+                        } catch (e) {
+                            return [];
+                        }
+                    }
+                    return [];
+                },
+                comment: "JSON array of cancellation policies - mandatory",
+            },
+            other_policies: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                get() {
+                    const rawValue = this.getDataValue("other_policies");
+                    if (!rawValue) return [];
+                    if (Array.isArray(rawValue)) return rawValue;
+                    if (typeof rawValue === "string") {
+                        try {
+                            const parsed = JSON.parse(rawValue);
+                            return Array.isArray(parsed) ? parsed : [];
+                        } catch (e) {
+                            return [];
+                        }
+                    }
+                    return [];
+                },
+                comment: "JSON array of other policies - optional",
+            },
         },
         {
             tableName: "treks",

@@ -205,6 +205,10 @@ exports.getVendorTreks = async (req, res) => {
                     trek.discount_value,
                     trek.discount_type
                 ),
+                cancellationPolicies: parseJsonField(
+                    trek.cancellation_policies
+                ),
+                otherPolicies: parseJsonField(trek.other_policies),
                 createdAt: trek.created_at,
                 updatedAt: trek.updated_at,
             };
@@ -360,6 +364,8 @@ exports.getTrekById = async (req, res) => {
                 trek.discount_value,
                 trek.discount_type
             ),
+            cancellationPolicies: parseJsonField(trek.cancellation_policies),
+            otherPolicies: parseJsonField(trek.other_policies),
             createdAt: trek.created_at,
             updatedAt: trek.updated_at,
         };
@@ -438,6 +444,8 @@ exports.createTrek = async (req, res) => {
             discountValue,
             discountType,
             hasDiscount,
+            cancellationPolicies,
+            otherPolicies,
         } = req.body;
 
         // Create the trek
@@ -466,6 +474,8 @@ exports.createTrek = async (req, res) => {
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
+            cancellation_policies: ensureJsonArray(cancellationPolicies),
+            other_policies: ensureJsonArray(otherPolicies),
         });
 
         console.log(
@@ -623,6 +633,8 @@ exports.updateTrek = async (req, res) => {
             discountValue,
             discountType,
             hasDiscount,
+            cancellationPolicies,
+            otherPolicies,
         } = req.body;
 
         // Find the trek
@@ -665,6 +677,8 @@ exports.updateTrek = async (req, res) => {
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
+            cancellation_policies: ensureJsonArray(cancellationPolicies),
+            other_policies: ensureJsonArray(otherPolicies),
         });
 
         // Update itinerary items
@@ -1232,6 +1246,8 @@ exports.getPublicTrekById = async (req, res) => {
                 trek.discount_value,
                 trek.discount_type
             ),
+            cancellationPolicies: parseJsonField(trek.cancellation_policies),
+            otherPolicies: parseJsonField(trek.other_policies),
             vendor: {
                 id: trek.vendor.id,
                 name: trek.vendor.user?.name || "Unknown Vendor",
@@ -1496,6 +1512,8 @@ exports.searchTreks = async (req, res) => {
                 trek.discount_value,
                 trek.discount_type
             ),
+            cancellationPolicies: parseJsonField(trek.cancellation_policies),
+            otherPolicies: parseJsonField(trek.other_policies),
             vendor: {
                 id: trek.vendor.id,
                 name: trek.vendor.user?.name || "Unknown Vendor",
