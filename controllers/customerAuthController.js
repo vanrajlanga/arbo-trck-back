@@ -6,8 +6,86 @@ const { verifyFirebaseToken } = require("../config/firebase");
 const firebaseVerify = async (req, res) => {
     try {
         const { firebaseIdToken } = req.body;
-        console.log("firebaseIdToken", firebaseIdToken);
-        return;
+
+        if (!firebaseIdToken) {
+            return res.status(400).json({
+                success: false,
+                message: "Firebase ID token is required",
+            });
+        }
+
+        // Verify Firebase ID token
+        const firebaseResult = await verifyFirebaseToken(firebaseIdToken);
+
+        if (!firebaseResult.success) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid Firebase token",
+                error: firebaseResult.error,
+            });
+        }
+
+        const { phone, email, uid } = firebaseResult;
+
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                message: "Phone number not found in Firebase token",
+            });
+        }
+
+        // Find or create customer
+        let customer = await Customer.findOne({ where: { phone } });
+
+        if (!customer) {
+            // Create new customer
+            customer = await Customer.create({
+                phone,
+                email: email || null,
+                firebase_uid: uid,
+                verification_status: "verified",
+                last_login: new Date(),
+            });
+        } else {
+            // Update existing customer
+            await customer.update({
+                firebase_uid: uid,
+                email: email || customer.email,
+                verification_status: "verified",
+                last_login: new Date(),
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: customer.id,
+                phone: customer.phone,
+                type: "customer",
+                firebase_uid: uid,
+            },
+            process.env.JWT_SECRET || "your-secret-key",
+            { expiresIn: "30d" }
+        );
+
+        res.json({
+            success: true,
+            message: customer.profile_completed
+                ? "Login successful"
+                : "Account created successfully",
+            data: {
+                token,
+                customer: {
+                    id: customer.id,
+                    phone: customer.phone,
+                    name: customer.name,
+                    email: customer.email,
+                    profileCompleted: customer.profile_completed,
+                    isNewCustomer: !customer.profile_completed,
+                },
+                expiresIn: "30d",
+            },
+        });
     } catch (error) {
         console.error("Error verifying Firebase token:", error);
         res.status(500).json({
