@@ -1,34 +1,37 @@
 const db = require("../models");
-const { City, PickupPoint, Mapping, WeatherLog, Trek, Vendor, User } = db;
+const { City, State, PickupPoint, Mapping, WeatherLog, Trek, Vendor, User } =
+    db;
 const { Op } = require("sequelize");
 
 // Get States
 const getStates = async (req, res) => {
     try {
-        // Get unique states from cities table without any filtering
-        const states = await City.findAll({
-            attributes: [
-                [
-                    db.sequelize.fn("DISTINCT", db.sequelize.col("state_name")),
-                    "stateName",
-                ],
-                "region",
-            ],
-            group: ["state_name", "region"],
-            order: [["state_name", "ASC"]],
-            raw: true,
-        });
+        const { region, isPopular, status } = req.query;
 
-        // Transform the data to a cleaner format
-        const transformedStates = states.map((state) => ({
-            name: state.stateName,
-            region: state.region,
-        }));
+        const whereClause = {};
+        if (region && region !== "all") whereClause.region = region;
+        if (isPopular !== undefined)
+            whereClause.is_popular = isPopular === "true";
+        if (status && status !== "all") whereClause.status = status;
+
+        const states = await State.findAll({
+            where: whereClause,
+            include: [
+                {
+                    model: City,
+                    as: "cities",
+                    attributes: ["id", "name", "status", "is_popular"],
+                    where: { status: "active" },
+                    required: false,
+                },
+            ],
+            order: [["name", "ASC"]],
+        });
 
         res.json({
             success: true,
-            data: transformedStates,
-            count: transformedStates.length,
+            data: states,
+            count: states.length,
         });
     } catch (error) {
         console.error("Error fetching states:", error);
@@ -40,64 +43,24 @@ const getStates = async (req, res) => {
     }
 };
 
-// City Management
+// Get Cities
 const getCities = async (req, res) => {
     try {
-        const { search, region, status, page = 1, limit = 10 } = req.query;
-
+        const { search, stateId } = req.query;
         const whereClause = {};
-
         if (search) {
-            whereClause[Op.or] = [
-                { cityName: { [Op.like]: `%${search}%` } },
-                { stateName: { [Op.like]: `%${search}%` } },
-            ];
+            whereClause[Op.or] = [{ cityName: { [Op.like]: `%${search}%` } }];
         }
-
-        if (region && region !== "all") {
-            whereClause.region = region;
-        }
-
-        if (status && status !== "all") {
-            whereClause.status = status;
-        }
-
-        const offset = (page - 1) * limit;
-
-        const { count, rows: cities } = await City.findAndCountAll({
+        if (stateId) whereClause.stateId = stateId;
+        const cities = await City.findAll({
             where: whereClause,
-            limit: parseInt(limit),
-            offset: offset,
-            order: [["created_at", "DESC"]],
+            include: [
+                { model: State, as: "state", attributes: ["id", "name"] },
+            ],
+            order: [["cityName", "ASC"]],
         });
-
-        // Calculate statistics
-        const totalCities = await City.count();
-        const activeCities = await City.count({ where: { status: "active" } });
-        const totalCustomers = (await City.sum("totalCustomers")) || 0;
-        const totalBookings = (await City.sum("totalBookings")) || 0;
-
-        res.json({
-            success: true,
-            data: {
-                cities,
-                pagination: {
-                    currentPage: parseInt(page),
-                    totalPages: Math.ceil(count / limit),
-                    totalItems: count,
-                    itemsPerPage: parseInt(limit),
-                },
-                statistics: {
-                    totalCities,
-                    activeCities,
-                    totalCustomers,
-                    totalBookings,
-                    growthRate: 23, // This would be calculated based on historical data
-                },
-            },
-        });
+        res.json({ success: true, data: { cities } });
     } catch (error) {
-        console.error("Error fetching cities:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch cities",
@@ -109,40 +72,17 @@ const getCities = async (req, res) => {
 const getCityById = async (req, res) => {
     try {
         const { id } = req.params;
-
         const city = await City.findByPk(id, {
             include: [
-                {
-                    model: PickupPoint,
-                    as: "pickupPoints",
-                },
-                {
-                    model: Mapping,
-                    as: "mappings",
-                    include: [
-                        {
-                            model: Trek,
-                            as: "trek",
-                            attributes: ["id", "title"],
-                        },
-                    ],
-                },
+                { model: State, as: "state", attributes: ["id", "name"] },
             ],
         });
-
-        if (!city) {
-            return res.status(404).json({
-                success: false,
-                message: "City not found",
-            });
-        }
-
-        res.json({
-            success: true,
-            data: city,
-        });
+        if (!city)
+            return res
+                .status(404)
+                .json({ success: false, message: "City not found" });
+        res.json({ success: true, data: city });
     } catch (error) {
-        console.error("Error fetching city:", error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch city",
@@ -153,40 +93,19 @@ const getCityById = async (req, res) => {
 
 const createCity = async (req, res) => {
     try {
-        const { cityName, stateName, region, status, launchDate, isPopular } =
-            req.body;
-
-        // Check if city already exists in the state
-        const existingCity = await City.findOne({
-            where: {
-                cityName: cityName,
-                stateName: stateName,
-            },
-        });
-
-        if (existingCity) {
+        const { cityName, isPopular, stateId } = req.body;
+        if (!cityName || !stateId)
             return res.status(400).json({
                 success: false,
-                message: `${cityName} already exists in ${stateName}`,
+                message: "City name and state are required",
             });
-        }
-
         const city = await City.create({
             cityName,
-            stateName,
-            region,
-            status,
-            isPopular: isPopular || false,
-            launchDate,
+            isPopular: !!isPopular,
+            stateId,
         });
-
-        res.status(201).json({
-            success: true,
-            message: "City created successfully",
-            data: city,
-        });
+        res.status(201).json({ success: true, data: city });
     } catch (error) {
-        console.error("Error creating city:", error);
         res.status(500).json({
             success: false,
             message: "Failed to create city",
@@ -198,25 +117,15 @@ const createCity = async (req, res) => {
 const updateCity = async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
-
+        const { cityName, isPopular, stateId } = req.body;
         const city = await City.findByPk(id);
-        if (!city) {
-            return res.status(404).json({
-                success: false,
-                message: "City not found",
-            });
-        }
-
-        await city.update(updateData);
-
-        res.json({
-            success: true,
-            message: "City updated successfully",
-            data: city,
-        });
+        if (!city)
+            return res
+                .status(404)
+                .json({ success: false, message: "City not found" });
+        await city.update({ cityName, isPopular, stateId });
+        res.json({ success: true, data: city });
     } catch (error) {
-        console.error("Error updating city:", error);
         res.status(500).json({
             success: false,
             message: "Failed to update city",
@@ -228,37 +137,14 @@ const updateCity = async (req, res) => {
 const deleteCity = async (req, res) => {
     try {
         const { id } = req.params;
-
         const city = await City.findByPk(id);
-        if (!city) {
-            return res.status(404).json({
-                success: false,
-                message: "City not found",
-            });
-        }
-
-        // Check if city has associated pickup points or mappings
-        const pickupPointsCount = await PickupPoint.count({
-            where: { cityId: id },
-        });
-        const mappingsCount = await Mapping.count({ where: { cityId: id } });
-
-        if (pickupPointsCount > 0 || mappingsCount > 0) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Cannot delete city with associated pickup points or mappings",
-            });
-        }
-
+        if (!city)
+            return res
+                .status(404)
+                .json({ success: false, message: "City not found" });
         await city.destroy();
-
-        res.json({
-            success: true,
-            message: "City deleted successfully",
-        });
+        res.json({ success: true, message: "City deleted" });
     } catch (error) {
-        console.error("Error deleting city:", error);
         res.status(500).json({
             success: false,
             message: "Failed to delete city",

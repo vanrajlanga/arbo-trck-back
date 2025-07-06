@@ -79,6 +79,111 @@ PUT  /api/v1/customer/bookings/:id/cancel # Cancel booking
 GET /api/v1/locations/cities  # Available cities
 ```
 
+### 8. Location Management
+
+#### Get All States
+
+```http
+GET /api/v1/states
+```
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Uttarakhand",
+            "state_code": "UK",
+            "region": "North",
+            "status": "active",
+            "is_popular": true,
+            "total_cities": 5,
+            "total_customers": 1250,
+            "total_vendors": 45,
+            "total_bookings": 890,
+            "cities": [
+                {
+                    "id": 1,
+                    "name": "Dehradun",
+                    "status": "active",
+                    "is_popular": true
+                }
+            ]
+        }
+    ]
+}
+```
+
+#### Get Popular States
+
+```http
+GET /api/v1/states/popular
+```
+
+#### Get States by Region
+
+```http
+GET /api/v1/states/region/{region}
+```
+
+#### Get State by ID
+
+```http
+GET /api/v1/states/{id}
+```
+
+#### Get All Cities
+
+```http
+GET /api/v1/locations/cities
+```
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "data": {
+        "cities": [
+            {
+                "id": 1,
+                "name": "Dehradun",
+                "stateId": 1,
+                "status": "active",
+                "is_popular": true,
+                "launch_date": "2023-01-15",
+                "total_customers": 450,
+                "total_vendors": 12,
+                "total_bookings": 320,
+                "avg_rating": 4.2,
+                "popular_treks": ["Kedarnath", "Valley of Flowers"],
+                "state": {
+                    "id": 1,
+                    "name": "Uttarakhand",
+                    "region": "North"
+                }
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 5,
+            "totalItems": 50,
+            "itemsPerPage": 10
+        },
+        "statistics": {
+            "totalCities": 50,
+            "activeCities": 45,
+            "totalCustomers": 12500,
+            "totalBookings": 8900,
+            "growthRate": 23
+        }
+    }
+}
+```
+
 ---
 
 ## 🔐 Authentication Headers

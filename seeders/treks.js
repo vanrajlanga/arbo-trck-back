@@ -1,0 +1,476 @@
+"use strict";
+
+const { Trek, Vendor, Destination, City } = require("../models");
+
+const seedTreks = async () => {
+    try {
+        // Check if treks already exist
+        const existingTreks = await Trek.findAll();
+        if (existingTreks.length > 0) {
+            console.log("Treks already exist, skipping seed.");
+            return;
+        }
+
+        // Get all vendors, destinations, and cities to reference them properly
+        const vendors = await Vendor.findAll();
+        const destinations = await Destination.findAll();
+        const cities = await City.findAll();
+
+        if (vendors.length === 0) {
+            console.log("No vendors found. Please run vendor seeder first.");
+            return;
+        }
+
+        const vendorMap = {};
+        vendors.forEach((vendor) => {
+            vendorMap[vendor.id] = vendor.id;
+        });
+
+        const destinationMap = {};
+        destinations.forEach((dest) => {
+            destinationMap[dest.name] = dest.id;
+        });
+
+        const cityMap = {};
+        cities.forEach((city) => {
+            cityMap[city.cityName] = city.id;
+        });
+
+        const treks = [
+            // Uttarakhand Treks
+            {
+                title: "Valley of Flowers Trek",
+                description:
+                    "Experience the magical Valley of Flowers, a UNESCO World Heritage site with vibrant alpine flowers and stunning Himalayan views. This moderate trek takes you through beautiful meadows and offers breathtaking views of the surrounding peaks.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Valley of Flowers"],
+                city_id: cityMap["Dehradun"],
+                duration: "6 Days / 5 Nights",
+                duration_days: 6,
+                duration_nights: 5,
+                difficulty: "moderate",
+                trek_type: "mountain",
+                category: "Flower Valley Trek",
+                base_price: 15999.0,
+                max_participants: 15,
+                booked_slots: 0,
+                start_date: "2025-08-15",
+                end_date: "2025-08-20",
+                meeting_point: "Dehradun Railway Station",
+                meeting_time: "08:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in tents and guesthouses",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Transport from Dehradun to base camp",
+                    "Experienced trek guide",
+                    "First aid kit",
+                    "Permits and entry fees",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Any additional food items",
+                    "Tips for guides and porters",
+                ]),
+                status: "published",
+            },
+            {
+                title: "Kedarnath Temple Trek",
+                description:
+                    "Embark on a spiritual journey to the sacred Kedarnath Temple, one of the Char Dham pilgrimage sites. This trek combines religious significance with natural beauty as you traverse through the Garhwal Himalayas.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Kedarnath Temple"],
+                city_id: cityMap["Dehradun"],
+                duration: "5 Days / 4 Nights",
+                duration_days: 5,
+                duration_nights: 4,
+                difficulty: "moderate",
+                trek_type: "mountain",
+                category: "Pilgrimage Trek",
+                base_price: 12999.0,
+                max_participants: 20,
+                booked_slots: 0,
+                start_date: "2025-09-10",
+                end_date: "2025-09-14",
+                meeting_point: "Haridwar Bus Stand",
+                meeting_time: "07:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in guesthouses",
+                    "Vegetarian meals",
+                    "Transport from Haridwar",
+                    "Temple darshan arrangements",
+                    "Experienced guide",
+                    "Basic medical support",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional food items",
+                    "Donations at temple",
+                ]),
+                status: "published",
+            },
+            {
+                title: "Rishikesh Adventure Trek",
+                description:
+                    "Combine trekking with adventure sports in the adventure capital of India. This trek includes river rafting, rock climbing, and jungle trekking along the banks of the holy Ganges.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Rishikesh Adventure Hub"],
+                city_id: cityMap["Rishikesh"],
+                duration: "4 Days / 3 Nights",
+                duration_days: 4,
+                duration_nights: 3,
+                difficulty: "easy",
+                trek_type: "adventure",
+                category: "Adventure Trek",
+                base_price: 8999.0,
+                max_participants: 12,
+                booked_slots: 0,
+                start_date: "2025-07-20",
+                end_date: "2025-07-23",
+                meeting_point: "Rishikesh Railway Station",
+                meeting_time: "09:00 AM",
+                inclusions: JSON.stringify([
+                    "River rafting experience",
+                    "Rock climbing session",
+                    "Jungle trekking",
+                    "Accommodation in camps",
+                    "All adventure equipment",
+                    "Experienced instructors",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional adventure activities",
+                    "Tips for instructors",
+                ]),
+                status: "published",
+            },
+
+            // Himachal Pradesh Treks
+            {
+                title: "Solang Valley Trek",
+                description:
+                    "Explore the beautiful Solang Valley with its stunning landscapes and adventure activities. This trek offers a perfect blend of natural beauty and adventure sports in the heart of Himachal Pradesh.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Solang Valley"],
+                city_id: cityMap["Manali"],
+                duration: "5 Days / 4 Nights",
+                duration_days: 5,
+                duration_nights: 4,
+                difficulty: "easy",
+                trek_type: "hill-station",
+                category: "Valley Trek",
+                base_price: 11999.0,
+                max_participants: 18,
+                booked_slots: 0,
+                start_date: "2025-08-05",
+                end_date: "2025-08-09",
+                meeting_point: "Manali Bus Stand",
+                meeting_time: "08:30 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in hotels and camps",
+                    "All meals",
+                    "Transport from Manali",
+                    "Adventure activities",
+                    "Experienced guide",
+                    "Safety equipment",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional activities",
+                    "Tips for guides",
+                ]),
+                status: "published",
+            },
+            {
+                title: "Triund Trek",
+                description:
+                    "A popular trek near Dharamshala offering panoramic views of the Dhauladhar range. This moderate trek is perfect for beginners and offers stunning sunset views from the top.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Triund Trek"],
+                city_id: cityMap["Dharamshala"],
+                duration: "3 Days / 2 Nights",
+                duration_days: 3,
+                duration_nights: 2,
+                difficulty: "moderate",
+                trek_type: "mountain",
+                category: "Mountain Trek",
+                base_price: 6999.0,
+                max_participants: 15,
+                booked_slots: 0,
+                start_date: "2025-09-15",
+                end_date: "2025-09-17",
+                meeting_point: "McLeod Ganj Bus Stand",
+                meeting_time: "09:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in tents",
+                    "All meals",
+                    "Transport from Dharamshala",
+                    "Experienced guide",
+                    "Camping equipment",
+                    "First aid support",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional food items",
+                    "Tips for guides",
+                ]),
+                status: "published",
+            },
+
+            // Ladakh Treks
+            {
+                title: "Pangong Lake Trek",
+                description:
+                    "Experience the magical Pangong Lake with its changing colors and stunning mountain backdrop. This high-altitude trek offers breathtaking views of the Ladakh landscape.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Pangong Lake"],
+                city_id: cityMap["Leh"],
+                duration: "7 Days / 6 Nights",
+                duration_days: 7,
+                duration_nights: 6,
+                difficulty: "difficult",
+                trek_type: "mountain",
+                category: "High Altitude Trek",
+                base_price: 24999.0,
+                max_participants: 10,
+                booked_slots: 0,
+                start_date: "2025-07-25",
+                end_date: "2025-07-31",
+                meeting_point: "Leh Airport",
+                meeting_time: "10:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in camps and guesthouses",
+                    "All meals",
+                    "Transport from Leh",
+                    "Oxygen support",
+                    "Experienced high-altitude guide",
+                    "Medical support",
+                ]),
+                exclusions: JSON.stringify([
+                    "Flight tickets",
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional medical expenses",
+                ]),
+                status: "published",
+            },
+            {
+                title: "Khardungla Pass Trek",
+                description:
+                    "Trek to the world's highest motorable pass at 18,380 feet. This extreme trek offers unparalleled views of the Karakoram and Ladakh ranges.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Khardungla Pass"],
+                city_id: cityMap["Leh"],
+                duration: "8 Days / 7 Nights",
+                duration_days: 8,
+                duration_nights: 7,
+                difficulty: "extreme",
+                trek_type: "mountain",
+                category: "Extreme Trek",
+                base_price: 29999.0,
+                max_participants: 8,
+                booked_slots: 0,
+                start_date: "2025-08-10",
+                end_date: "2025-08-17",
+                meeting_point: "Leh Airport",
+                meeting_time: "09:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in camps",
+                    "All meals",
+                    "Transport from Leh",
+                    "Oxygen cylinders",
+                    "Experienced extreme trek guide",
+                    "Full medical support",
+                ]),
+                exclusions: JSON.stringify([
+                    "Flight tickets",
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional medical expenses",
+                ]),
+                status: "published",
+            },
+
+            // Sikkim Treks
+            {
+                title: "Yumthang Valley Trek",
+                description:
+                    "Explore the Valley of Flowers in North Sikkim with its rhododendron forests and hot springs. This trek offers a unique blend of natural beauty and cultural experiences.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Yumthang Valley"],
+                city_id: cityMap["Lachung"],
+                duration: "6 Days / 5 Nights",
+                duration_days: 6,
+                duration_nights: 5,
+                difficulty: "moderate",
+                trek_type: "mountain",
+                category: "Valley Trek",
+                base_price: 18999.0,
+                max_participants: 12,
+                booked_slots: 0,
+                start_date: "2025-05-20",
+                end_date: "2025-05-25",
+                meeting_point: "Gangtok Bus Stand",
+                meeting_time: "08:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in guesthouses",
+                    "All meals",
+                    "Transport from Gangtok",
+                    "Permits for North Sikkim",
+                    "Experienced guide",
+                    "Medical support",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional food items",
+                    "Tips for guides",
+                ]),
+                status: "published",
+            },
+
+            // Maharashtra Treks
+            {
+                title: "Lonavala Caves Trek",
+                description:
+                    "Explore the ancient Buddhist caves of Lonavala while trekking through the Western Ghats. This easy trek combines history, culture, and natural beauty.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Lonavala Caves"],
+                city_id: cityMap["Lonavala"],
+                duration: "2 Days / 1 Night",
+                duration_days: 2,
+                duration_nights: 1,
+                difficulty: "easy",
+                trek_type: "forest",
+                category: "Cave Trek",
+                base_price: 4999.0,
+                max_participants: 25,
+                booked_slots: 0,
+                start_date: "2025-10-15",
+                end_date: "2025-10-16",
+                meeting_point: "Lonavala Railway Station",
+                meeting_time: "10:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in guesthouse",
+                    "All meals",
+                    "Transport from station",
+                    "Cave exploration guide",
+                    "Safety equipment",
+                    "Historical information",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional food items",
+                    "Tips for guides",
+                ]),
+                status: "published",
+            },
+
+            // Karnataka Treks
+            {
+                title: "Mysore Palace Trek",
+                description:
+                    "A cultural trek exploring the magnificent Mysore Palace and surrounding heritage sites. This easy trek focuses on history and architecture rather than physical challenge.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Mysore Palace"],
+                city_id: cityMap["Mysore"],
+                duration: "3 Days / 2 Nights",
+                duration_days: 3,
+                duration_nights: 2,
+                difficulty: "easy",
+                trek_type: "hill-station",
+                category: "Cultural Trek",
+                base_price: 7999.0,
+                max_participants: 20,
+                booked_slots: 0,
+                start_date: "2025-11-10",
+                end_date: "2025-11-12",
+                meeting_point: "Mysore Railway Station",
+                meeting_time: "09:00 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in heritage hotel",
+                    "All meals",
+                    "Palace entry fees",
+                    "Cultural guide",
+                    "Transport within city",
+                    "Historical information",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional food items",
+                    "Tips for guides",
+                ]),
+                status: "published",
+            },
+
+            // Kerala Treks
+            {
+                title: "Munnar Tea Gardens Trek",
+                description:
+                    "Trek through the rolling tea plantations of Munnar with their emerald green landscapes. This easy trek offers stunning views and insights into tea cultivation.",
+                vendor_id: vendors[0].id,
+                destination_id: destinationMap["Munnar Tea Gardens"],
+                city_id: cityMap["Munnar"],
+                duration: "4 Days / 3 Nights",
+                duration_days: 4,
+                duration_nights: 3,
+                difficulty: "easy",
+                trek_type: "hill-station",
+                category: "Tea Garden Trek",
+                base_price: 9999.0,
+                max_participants: 18,
+                booked_slots: 0,
+                start_date: "2025-12-05",
+                end_date: "2025-12-08",
+                meeting_point: "Munnar Bus Stand",
+                meeting_time: "08:30 AM",
+                inclusions: JSON.stringify([
+                    "Accommodation in tea estate",
+                    "All meals",
+                    "Tea plantation tour",
+                    "Experienced guide",
+                    "Transport within Munnar",
+                    "Tea tasting session",
+                ]),
+                exclusions: JSON.stringify([
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional food items",
+                    "Tips for guides",
+                ]),
+                status: "published",
+            },
+        ];
+
+        await Trek.bulkCreate(treks);
+        console.log("Treks seeded successfully!");
+
+        // Display created treks count
+        const createdTreks = await Trek.findAll();
+        console.log(`Created ${createdTreks.length} treks`);
+    } catch (error) {
+        console.error("Error seeding treks:", error);
+    }
+};
+
+module.exports = seedTreks;
+
+// Run if called directly
+if (require.main === module) {
+    const sequelize = require("../config/config");
+
+    seedTreks()
+        .then(() => {
+            process.exit(0);
+        })
+        .catch((err) => {
+            console.error(err);
+            process.exit(1);
+        });
+}

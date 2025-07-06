@@ -1,240 +1,317 @@
 "use strict";
 
-module.exports = {
-    up: async (queryInterface, Sequelize) => {
+const { Destination } = require("../models");
+
+const seedDestinations = async () => {
+    try {
+        // Check if destinations already exist
+        const existingDestinations = await Destination.findAll();
+        if (existingDestinations.length > 0) {
+            console.log("Destinations already exist, skipping seed.");
+            return;
+        }
+
         const destinations = [
-            {
-                name: "Kedarnath",
-                description:
-                    "Sacred Hindu temple dedicated to Lord Shiva, located in the Garhwal Himalayas",
-                region: "North",
-                state: "Uttarakhand",
-                altitude: 3584,
-                best_time_to_visit: JSON.stringify([
-                    "May",
-                    "June",
-                    "September",
-                    "October",
-                ]),
-                difficulty: "moderate",
-                trek_type: "mountain",
-                is_popular: true,
-                status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 30.7346, lng: 79.0669 }),
-                created_at: new Date(),
-                updated_at: new Date(),
-            },
+            // Uttarakhand Destinations
             {
                 name: "Valley of Flowers",
-                description:
-                    "UNESCO World Heritage Site known for its meadows of endemic alpine flowers",
-                region: "North",
                 state: "Uttarakhand",
-                altitude: 3658,
-                best_time_to_visit: JSON.stringify([
-                    "July",
-                    "August",
-                    "September",
-                ]),
-                difficulty: "moderate",
-                trek_type: "mountain",
                 is_popular: true,
                 status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 30.7281, lng: 79.6049 }),
-                created_at: new Date(),
-                updated_at: new Date(),
             },
             {
-                name: "Roopkund",
-                description:
-                    "Mysterious glacial lake known for human skeletons found at its bottom",
-                region: "North",
+                name: "Kedarnath Temple",
                 state: "Uttarakhand",
-                altitude: 5029,
-                best_time_to_visit: JSON.stringify([
-                    "May",
-                    "June",
-                    "September",
-                    "October",
-                ]),
-                difficulty: "difficult",
-                trek_type: "mountain",
                 is_popular: true,
                 status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 30.2578, lng: 79.7307 }),
-                created_at: new Date(),
-                updated_at: new Date(),
             },
             {
-                name: "Hampta Pass",
-                description:
-                    "High altitude mountain pass connecting Kullu Valley to Lahaul Valley",
-                region: "North",
-                state: "Himachal Pradesh",
-                altitude: 4270,
-                best_time_to_visit: JSON.stringify([
-                    "June",
-                    "July",
-                    "August",
-                    "September",
-                ]),
-                difficulty: "moderate",
-                trek_type: "mountain",
+                name: "Badrinath Temple",
+                state: "Uttarakhand",
                 is_popular: true,
                 status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 32.2432, lng: 77.1892 }),
-                created_at: new Date(),
-                updated_at: new Date(),
             },
             {
-                name: "Triund",
-                description:
-                    "Popular trekking destination offering panoramic views of Dhauladhar range",
-                region: "North",
-                state: "Himachal Pradesh",
-                altitude: 2847,
-                best_time_to_visit: JSON.stringify([
-                    "March",
-                    "April",
-                    "May",
-                    "June",
-                    "September",
-                    "October",
-                ]),
-                difficulty: "easy",
-                trek_type: "mountain",
-                is_popular: true,
-                status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 32.2432, lng: 76.3232 }),
-                created_at: new Date(),
-                updated_at: new Date(),
-            },
-            {
-                name: "Sandakphu",
-                description:
-                    "Highest peak in West Bengal offering views of four of the five highest peaks in the world",
-                region: "North-East",
-                state: "West Bengal",
-                altitude: 3636,
-                best_time_to_visit: JSON.stringify([
-                    "March",
-                    "April",
-                    "May",
-                    "October",
-                    "November",
-                ]),
-                difficulty: "moderate",
-                trek_type: "mountain",
-                is_popular: true,
-                status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 27.1067, lng: 88.0083 }),
-                created_at: new Date(),
-                updated_at: new Date(),
-            },
-            {
-                name: "Kumara Parvatha",
-                description:
-                    "One of the most challenging treks in Karnataka with steep ascents",
-                region: "South",
-                state: "Karnataka",
-                altitude: 1712,
-                best_time_to_visit: JSON.stringify([
-                    "October",
-                    "November",
-                    "December",
-                    "January",
-                    "February",
-                ]),
-                difficulty: "difficult",
-                trek_type: "mountain",
-                is_popular: true,
-                status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 12.9716, lng: 75.7507 }),
-                created_at: new Date(),
-                updated_at: new Date(),
-            },
-            {
-                name: "Kodachadri",
-                description:
-                    "Mountain peak in the Western Ghats with dense forests and waterfalls",
-                region: "South",
-                state: "Karnataka",
-                altitude: 1343,
-                best_time_to_visit: JSON.stringify([
-                    "October",
-                    "November",
-                    "December",
-                    "January",
-                    "February",
-                ]),
-                difficulty: "moderate",
-                trek_type: "mountain",
+                name: "Gangotri Glacier",
+                state: "Uttarakhand",
                 is_popular: false,
                 status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 13.8667, lng: 74.8667 }),
-                created_at: new Date(),
-                updated_at: new Date(),
             },
             {
-                name: "Tadiandamol",
-                description:
-                    "Highest peak in Coorg with coffee plantations and scenic views",
-                region: "South",
-                state: "Karnataka",
-                altitude: 1748,
-                best_time_to_visit: JSON.stringify([
-                    "October",
-                    "November",
-                    "December",
-                    "January",
-                    "February",
-                ]),
-                difficulty: "moderate",
-                trek_type: "mountain",
+                name: "Yamunotri",
+                state: "Uttarakhand",
                 is_popular: false,
                 status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 12.9716, lng: 75.7507 }),
-                created_at: new Date(),
-                updated_at: new Date(),
             },
             {
-                name: "Mullayanagiri",
-                description:
-                    "Highest peak in Karnataka with panoramic views of Western Ghats",
-                region: "South",
-                state: "Karnataka",
-                altitude: 1930,
-                best_time_to_visit: JSON.stringify([
-                    "October",
-                    "November",
-                    "December",
-                    "January",
-                    "February",
-                ]),
-                difficulty: "easy",
-                trek_type: "mountain",
+                name: "Rishikesh Adventure Hub",
+                state: "Uttarakhand",
                 is_popular: true,
                 status: "active",
-                image_url: null,
-                coordinates: JSON.stringify({ lat: 13.3889, lng: 75.7222 }),
-                created_at: new Date(),
-                updated_at: new Date(),
+            },
+            {
+                name: "Lakshman Jhula",
+                state: "Uttarakhand",
+                is_popular: false,
+                status: "active",
+            },
+            {
+                name: "Har Ki Pauri",
+                state: "Uttarakhand",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Mussoorie Hills",
+                state: "Uttarakhand",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Naini Lake",
+                state: "Uttarakhand",
+                is_popular: true,
+                status: "active",
+            },
+
+            // Himachal Pradesh Destinations
+            {
+                name: "Solang Valley",
+                state: "Himachal Pradesh",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Rohtang Pass",
+                state: "Himachal Pradesh",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Hadimba Temple",
+                state: "Himachal Pradesh",
+                is_popular: false,
+                status: "active",
+            },
+            {
+                name: "Mall Road",
+                state: "Himachal Pradesh",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Kufri",
+                state: "Himachal Pradesh",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Dalai Lama Temple",
+                state: "Himachal Pradesh",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Triund Trek",
+                state: "Himachal Pradesh",
+                is_popular: false,
+                status: "active",
+            },
+
+            // Jammu and Kashmir Destinations
+            {
+                name: "Dal Lake",
+                state: "Jammu and Kashmir",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Gulmarg",
+                state: "Jammu and Kashmir",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Pahalgam",
+                state: "Jammu and Kashmir",
+                is_popular: false,
+                status: "active",
+            },
+
+            // Ladakh Destinations
+            {
+                name: "Pangong Lake",
+                state: "Ladakh",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Nubra Valley",
+                state: "Ladakh",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Khardungla Pass",
+                state: "Ladakh",
+                is_popular: true,
+                status: "active",
+            },
+
+            // Sikkim Destinations
+            {
+                name: "Tsomgo Lake",
+                state: "Sikkim",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Nathula Pass",
+                state: "Sikkim",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Yumthang Valley",
+                state: "Sikkim",
+                is_popular: false,
+                status: "active",
+            },
+
+            // Maharashtra Destinations
+            {
+                name: "Gateway of India",
+                state: "Maharashtra",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Marine Drive",
+                state: "Maharashtra",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Lonavala Caves",
+                state: "Maharashtra",
+                is_popular: false,
+                status: "active",
+            },
+            {
+                name: "Mahabaleshwar Hills",
+                state: "Maharashtra",
+                is_popular: false,
+                status: "active",
+            },
+
+            // Karnataka Destinations
+            {
+                name: "Lalbagh Botanical Garden",
+                state: "Karnataka",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Mysore Palace",
+                state: "Karnataka",
+                is_popular: true,
+                status: "active",
+            },
+
+            // Kerala Destinations
+            {
+                name: "Chinese Fishing Nets",
+                state: "Kerala",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Munnar Tea Gardens",
+                state: "Kerala",
+                is_popular: false,
+                status: "active",
+            },
+
+            // Tamil Nadu Destinations
+            {
+                name: "Marina Beach",
+                state: "Tamil Nadu",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Ooty Botanical Gardens",
+                state: "Tamil Nadu",
+                is_popular: false,
+                status: "active",
+            },
+
+            // Rajasthan Destinations
+            {
+                name: "Amber Fort",
+                state: "Rajasthan",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Lake Palace",
+                state: "Rajasthan",
+                is_popular: true,
+                status: "active",
+            },
+
+            // Delhi Destinations
+            {
+                name: "Red Fort",
+                state: "Delhi",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Qutub Minar",
+                state: "Delhi",
+                is_popular: true,
+                status: "active",
+            },
+
+            // Goa Destinations
+            {
+                name: "Calangute Beach",
+                state: "Goa",
+                is_popular: true,
+                status: "active",
+            },
+            {
+                name: "Basilica of Bom Jesus",
+                state: "Goa",
+                is_popular: true,
+                status: "active",
             },
         ];
 
-        await queryInterface.bulkInsert("destinations", destinations, {});
-    },
+        await Destination.bulkCreate(destinations);
+        console.log("Destinations seeded successfully!");
 
-    down: async (queryInterface, Sequelize) => {
-        await queryInterface.bulkDelete("destinations", null, {});
-    },
+        // Display created destinations count
+        const createdDestinations = await Destination.findAll();
+        console.log(`Created ${createdDestinations.length} destinations`);
+    } catch (error) {
+        console.error("Error seeding destinations:", error);
+    }
 };
+
+module.exports = seedDestinations;
+
+// Run if called directly
+if (require.main === module) {
+    const sequelize = require("../config/config");
+
+    seedDestinations()
+        .then(() => {
+            process.exit(0);
+        })
+        .catch((err) => {
+            console.error(err);
+            process.exit(1);
+        });
+}

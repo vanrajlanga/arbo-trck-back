@@ -1,234 +1,210 @@
-const { City } = require("../models");
+"use strict";
+
+const { City, State } = require("../models");
 
 const seedCities = async () => {
     try {
-        console.log("🌆 Seeding cities...");
+        // Check if cities already exist
+        const existingCities = await City.findAll();
+        if (existingCities.length > 0) {
+            console.log("Cities already exist, skipping seed.");
+            return;
+        }
+
+        // Get all states to reference them properly
+        const states = await State.findAll();
+        const stateMap = {};
+        states.forEach((state) => {
+            stateMap[state.name] = state.id;
+        });
 
         const cities = [
-            // Telangana
+            // Uttarakhand - Major Trekking Hub
             {
-                cityName: "Hyderabad",
-                stateName: "Telangana",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.5,
-                popularTreks: [],
+                cityName: "Dehradun",
+                isPopular: true,
+                stateId: stateMap["Uttarakhand"],
             },
             {
-                cityName: "Warangal",
-                stateName: "Telangana",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.2,
-                popularTreks: [],
+                cityName: "Rishikesh",
+                isPopular: true,
+                stateId: stateMap["Uttarakhand"],
             },
             {
-                cityName: "Khammam",
-                stateName: "Telangana",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.0,
-                popularTreks: [],
-            },
-
-            // Andhra Pradesh
-            {
-                cityName: "Vijayawada",
-                stateName: "Andhra Pradesh",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.3,
-                popularTreks: [],
+                cityName: "Haridwar",
+                isPopular: true,
+                stateId: stateMap["Uttarakhand"],
             },
             {
-                cityName: "Visakhapatnam",
-                stateName: "Andhra Pradesh",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.4,
-                popularTreks: [],
+                cityName: "Mussoorie",
+                isPopular: true,
+                stateId: stateMap["Uttarakhand"],
             },
             {
-                cityName: "Guntur",
-                stateName: "Andhra Pradesh",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.1,
-                popularTreks: [],
+                cityName: "Nainital",
+                isPopular: true,
+                stateId: stateMap["Uttarakhand"],
+            },
+            {
+                cityName: "Almora",
+                isPopular: false,
+                stateId: stateMap["Uttarakhand"],
+            },
+            {
+                cityName: "Ranikhet",
+                isPopular: false,
+                stateId: stateMap["Uttarakhand"],
             },
 
-            // Tamil Nadu
+            // Himachal Pradesh
             {
-                cityName: "Chennai",
-                stateName: "Tamil Nadu",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.6,
-                popularTreks: [],
+                cityName: "Manali",
+                isPopular: true,
+                stateId: stateMap["Himachal Pradesh"],
             },
             {
-                cityName: "Coimbatore",
-                stateName: "Tamil Nadu",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.2,
-                popularTreks: [],
+                cityName: "Shimla",
+                isPopular: true,
+                stateId: stateMap["Himachal Pradesh"],
             },
             {
-                cityName: "Madurai",
-                stateName: "Tamil Nadu",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.0,
-                popularTreks: [],
+                cityName: "Dharamshala",
+                isPopular: true,
+                stateId: stateMap["Himachal Pradesh"],
+            },
+            {
+                cityName: "Kullu",
+                isPopular: false,
+                stateId: stateMap["Himachal Pradesh"],
+            },
+            {
+                cityName: "McLeod Ganj",
+                isPopular: false,
+                stateId: stateMap["Himachal Pradesh"],
             },
 
-            // Karnataka
+            // Jammu and Kashmir
             {
-                cityName: "Bangalore",
-                stateName: "Karnataka",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.7,
-                popularTreks: [],
+                cityName: "Srinagar",
+                isPopular: true,
+                stateId: stateMap["Jammu and Kashmir"],
             },
             {
-                cityName: "Mysore",
-                stateName: "Karnataka",
-                region: "South",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.3,
-                popularTreks: [],
+                cityName: "Leh",
+                isPopular: true,
+                stateId: stateMap["Ladakh"],
+            },
+            {
+                cityName: "Kargil",
+                isPopular: false,
+                stateId: stateMap["Ladakh"],
+            },
+
+            // Sikkim
+            {
+                cityName: "Gangtok",
+                isPopular: true,
+                stateId: stateMap["Sikkim"],
+            },
+            {
+                cityName: "Lachung",
+                isPopular: false,
+                stateId: stateMap["Sikkim"],
             },
 
             // Maharashtra
             {
                 cityName: "Mumbai",
-                stateName: "Maharashtra",
-                region: "West",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.8,
-                popularTreks: [],
+                isPopular: true,
+                stateId: stateMap["Maharashtra"],
             },
             {
                 cityName: "Pune",
-                stateName: "Maharashtra",
-                region: "West",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.5,
-                popularTreks: [],
+                isPopular: true,
+                stateId: stateMap["Maharashtra"],
             },
             {
-                cityName: "Nagpur",
-                stateName: "Maharashtra",
-                region: "West",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.1,
-                popularTreks: [],
+                cityName: "Lonavala",
+                isPopular: false,
+                stateId: stateMap["Maharashtra"],
+            },
+            {
+                cityName: "Mahabaleshwar",
+                isPopular: false,
+                stateId: stateMap["Maharashtra"],
+            },
+
+            // Karnataka
+            {
+                cityName: "Bangalore",
+                isPopular: true,
+                stateId: stateMap["Karnataka"],
+            },
+            {
+                cityName: "Mysore",
+                isPopular: false,
+                stateId: stateMap["Karnataka"],
+            },
+
+            // Kerala
+            {
+                cityName: "Kochi",
+                isPopular: true,
+                stateId: stateMap["Kerala"],
+            },
+            {
+                cityName: "Munnar",
+                isPopular: false,
+                stateId: stateMap["Kerala"],
+            },
+
+            // Tamil Nadu
+            {
+                cityName: "Chennai",
+                isPopular: true,
+                stateId: stateMap["Tamil Nadu"],
+            },
+            {
+                cityName: "Ooty",
+                isPopular: false,
+                stateId: stateMap["Tamil Nadu"],
+            },
+
+            // Rajasthan
+            {
+                cityName: "Jaipur",
+                isPopular: true,
+                stateId: stateMap["Rajasthan"],
+            },
+            {
+                cityName: "Udaipur",
+                isPopular: false,
+                stateId: stateMap["Rajasthan"],
             },
 
             // Delhi
             {
                 cityName: "New Delhi",
-                stateName: "Delhi",
-                region: "North",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.6,
-                popularTreks: [],
+                isPopular: true,
+                stateId: stateMap["Delhi"],
             },
+
+            // Goa
             {
-                cityName: "Gurgaon",
-                stateName: "Haryana",
-                region: "North",
-                status: "active",
-                launchDate: new Date(),
-                totalCustomers: 0,
-                totalVendors: 0,
-                totalBookings: 0,
-                avgRating: 4.4,
-                popularTreks: [],
+                cityName: "Panaji",
+                isPopular: true,
+                stateId: stateMap["Goa"],
             },
         ];
 
-        // Check if cities already exist
-        const existingCities = await City.findAll();
-        if (existingCities.length > 0) {
-            console.log("✅ Cities already exist, skipping seeding");
-            return;
-        }
+        await City.bulkCreate(cities);
+        console.log("Cities seeded successfully!");
 
-        // Create cities
-        for (const cityData of cities) {
-            await City.create(cityData);
-        }
-
-        console.log(`✅ Successfully seeded ${cities.length} cities`);
-        console.log("📋 Sample cities created:");
-        cities.forEach((city) => {
-            console.log(`   - ${city.cityName}, ${city.stateName}`);
-        });
+        // Display created cities count
+        const createdCities = await City.findAll();
+        console.log(`Created ${createdCities.length} cities`);
     } catch (error) {
-        console.error("❌ Error seeding cities:", error);
+        console.error("Error seeding cities:", error);
     }
 };
 
@@ -236,6 +212,8 @@ module.exports = seedCities;
 
 // Run if called directly
 if (require.main === module) {
+    const sequelize = require("../config/config");
+
     seedCities()
         .then(() => {
             process.exit(0);
