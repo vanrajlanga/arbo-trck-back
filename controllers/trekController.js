@@ -179,7 +179,7 @@ exports.getVendorTreks = async (req, res) => {
                     trek.accommodations?.map((acc, index) => ({
                         night: index + 1,
                         type: acc.type || "",
-                        name: acc.details?.name || "",
+                        date: acc.details?.date || "",
                         location: acc.details?.location || "",
                         description: acc.details?.description || "",
                     })) || [],
@@ -334,7 +334,7 @@ exports.getTrekById = async (req, res) => {
                 trek.accommodations?.map((acc, index) => ({
                     night: index + 1,
                     type: acc.type || "",
-                    name: acc.details?.name || "",
+                    date: acc.details?.date || "",
                     location: acc.details?.location || "",
                     description: acc.details?.description || "",
                 })) || [],
@@ -509,7 +509,7 @@ exports.createTrek = async (req, res) => {
                 trek_id: trek.id,
                 type: acc.type || "",
                 details: {
-                    name: acc.name || "",
+                    date: acc.date || "",
                     location: acc.location || "",
                     description: acc.description || "",
                 },
@@ -707,7 +707,7 @@ exports.updateTrek = async (req, res) => {
                 trek_id: trek.id,
                 type: acc.type || "",
                 details: {
-                    name: acc.name || "",
+                    date: acc.date || "",
                     location: acc.location || "",
                     description: acc.description || "",
                 },
@@ -1208,7 +1208,9 @@ exports.getPublicTrekById = async (req, res) => {
                 trek.accommodations?.map((acc, index) => ({
                     night: index + 1,
                     type: acc.type,
-                    details: acc.details,
+                    date: acc.details?.date || "",
+                    location: acc.details?.location || "",
+                    description: acc.details?.description || "",
                 })) || [],
             trekStages:
                 trek.trek_stages?.map((stage) => ({
