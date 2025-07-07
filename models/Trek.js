@@ -78,14 +78,6 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 defaultValue: 0,
             },
-            start_date: {
-                type: DataTypes.DATEONLY,
-                allowNull: true,
-            },
-            end_date: {
-                type: DataTypes.DATEONLY,
-                allowNull: true,
-            },
             meeting_point: {
                 type: DataTypes.STRING,
                 allowNull: true,

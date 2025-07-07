@@ -1,6 +1,6 @@
 "use strict";
 
-const { Trek, Vendor, Destination, City } = require("../models");
+const { Trek, Vendor, Destination, City, Batch } = require("../models");
 
 const seedTreks = async () => {
     try {
@@ -54,8 +54,6 @@ const seedTreks = async () => {
                 base_price: 15999.0,
                 max_participants: 15,
                 booked_slots: 0,
-                start_date: "2025-08-15",
-                end_date: "2025-08-20",
                 meeting_point: "Dehradun Railway Station",
                 meeting_time: "08:00 AM",
                 inclusions: JSON.stringify([
@@ -77,20 +75,23 @@ const seedTreks = async () => {
                 discount_value: 10.0,
                 discount_type: "percentage",
                 has_discount: true,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -138,8 +139,6 @@ const seedTreks = async () => {
                 base_price: 12999.0,
                 max_participants: 20,
                 booked_slots: 0,
-                start_date: "2025-09-10",
-                end_date: "2025-09-14",
                 meeting_point: "Haridwar Bus Stand",
                 meeting_time: "07:00 AM",
                 inclusions: JSON.stringify([
@@ -161,20 +160,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -213,8 +215,6 @@ const seedTreks = async () => {
                 base_price: 8999.0,
                 max_participants: 12,
                 booked_slots: 0,
-                start_date: "2025-07-20",
-                end_date: "2025-07-23",
                 meeting_point: "Rishikesh Railway Station",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -236,20 +236,23 @@ const seedTreks = async () => {
                 discount_value: 500.0,
                 discount_type: "fixed",
                 has_discount: true,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -290,8 +293,6 @@ const seedTreks = async () => {
                 base_price: 11999.0,
                 max_participants: 18,
                 booked_slots: 0,
-                start_date: "2025-08-05",
-                end_date: "2025-08-09",
                 meeting_point: "Manali Bus Stand",
                 meeting_time: "08:30 AM",
                 inclusions: JSON.stringify([
@@ -313,20 +314,23 @@ const seedTreks = async () => {
                 discount_value: 15.0,
                 discount_type: "percentage",
                 has_discount: true,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -365,8 +369,6 @@ const seedTreks = async () => {
                 base_price: 6999.0,
                 max_participants: 15,
                 booked_slots: 0,
-                start_date: "2025-09-15",
-                end_date: "2025-09-17",
                 meeting_point: "McLeod Ganj Bus Stand",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -388,20 +390,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -442,8 +447,6 @@ const seedTreks = async () => {
                 base_price: 24999.0,
                 max_participants: 10,
                 booked_slots: 0,
-                start_date: "2025-07-25",
-                end_date: "2025-07-31",
                 meeting_point: "Leh Airport",
                 meeting_time: "10:00 AM",
                 inclusions: JSON.stringify([
@@ -465,20 +468,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -517,8 +523,6 @@ const seedTreks = async () => {
                 base_price: 29999.0,
                 max_participants: 8,
                 booked_slots: 0,
-                start_date: "2025-08-10",
-                end_date: "2025-08-17",
                 meeting_point: "Leh Airport",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -540,20 +544,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -594,8 +601,6 @@ const seedTreks = async () => {
                 base_price: 18999.0,
                 max_participants: 12,
                 booked_slots: 0,
-                start_date: "2025-05-20",
-                end_date: "2025-05-25",
                 meeting_point: "Gangtok Bus Stand",
                 meeting_time: "08:00 AM",
                 inclusions: JSON.stringify([
@@ -617,20 +622,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -671,8 +679,6 @@ const seedTreks = async () => {
                 base_price: 4999.0,
                 max_participants: 25,
                 booked_slots: 0,
-                start_date: "2025-10-15",
-                end_date: "2025-10-16",
                 meeting_point: "Lonavala Railway Station",
                 meeting_time: "10:00 AM",
                 inclusions: JSON.stringify([
@@ -694,20 +700,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -739,8 +748,6 @@ const seedTreks = async () => {
                 base_price: 7999.0,
                 max_participants: 20,
                 booked_slots: 0,
-                start_date: "2025-11-10",
-                end_date: "2025-11-12",
                 meeting_point: "Mysore Railway Station",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -762,20 +769,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -816,8 +826,6 @@ const seedTreks = async () => {
                 base_price: 9999.0,
                 max_participants: 18,
                 booked_slots: 0,
-                start_date: "2025-12-05",
-                end_date: "2025-12-08",
                 meeting_point: "Munnar Bus Stand",
                 meeting_time: "08:30 AM",
                 inclusions: JSON.stringify([
@@ -839,20 +847,23 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
-                cancellation_policies: JSON.stringify({
-                    title: "Cancellation Policy",
-                    description: "Standard cancellation terms and conditions",
-                    rules: [
-                        { rule: "Full refund", deduction: "0%" },
-                        { rule: "Partial refund", deduction: "50%" },
-                        { rule: "No refund", deduction: "100%" },
-                    ],
-                    descriptionPoints: [
-                        "Cancellation must be made in writing",
-                        "Refunds processed within 5-7 business days",
-                        "Force majeure events may affect cancellation terms",
-                    ],
-                }),
+                cancellation_policies: JSON.stringify([
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms and conditions",
+                        rules: [
+                            { rule: "Full refund", deduction: "0%" },
+                            { rule: "Partial refund", deduction: "50%" },
+                            { rule: "No refund", deduction: "100%" },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Force majeure events may affect cancellation terms",
+                        ],
+                    },
+                ]),
                 other_policies: JSON.stringify([]),
                 activities: JSON.stringify([
                     {
@@ -880,8 +891,258 @@ const seedTreks = async () => {
         await Trek.bulkCreate(treks);
         console.log("Treks seeded successfully!");
 
-        // Display created treks count
+        // Create batches for each trek
         const createdTreks = await Trek.findAll();
+        const batchData = [];
+
+        // Valley of Flowers Trek batches
+        const valleyTrek = createdTreks.find(
+            (t) => t.title === "Valley of Flowers Trek"
+        );
+        if (valleyTrek) {
+            batchData.push(
+                {
+                    trek_id: valleyTrek.id,
+                    start_date: "2025-08-15",
+                    end_date: "2025-08-20",
+                    capacity: 15,
+                },
+                {
+                    trek_id: valleyTrek.id,
+                    start_date: "2025-09-10",
+                    end_date: "2025-09-15",
+                    capacity: 15,
+                },
+                {
+                    trek_id: valleyTrek.id,
+                    start_date: "2025-10-05",
+                    end_date: "2025-10-10",
+                    capacity: 15,
+                }
+            );
+        }
+
+        // Kedarnath Temple Trek batches
+        const kedarnathTrek = createdTreks.find(
+            (t) => t.title === "Kedarnath Temple Trek"
+        );
+        if (kedarnathTrek) {
+            batchData.push(
+                {
+                    trek_id: kedarnathTrek.id,
+                    start_date: "2025-09-10",
+                    end_date: "2025-09-14",
+                    capacity: 20,
+                },
+                {
+                    trek_id: kedarnathTrek.id,
+                    start_date: "2025-10-15",
+                    end_date: "2025-10-19",
+                    capacity: 20,
+                }
+            );
+        }
+
+        // Rishikesh Adventure Trek batches
+        const rishikeshTrek = createdTreks.find(
+            (t) => t.title === "Rishikesh Adventure Trek"
+        );
+        if (rishikeshTrek) {
+            batchData.push(
+                {
+                    trek_id: rishikeshTrek.id,
+                    start_date: "2025-07-20",
+                    end_date: "2025-07-23",
+                    capacity: 12,
+                },
+                {
+                    trek_id: rishikeshTrek.id,
+                    start_date: "2025-08-15",
+                    end_date: "2025-08-18",
+                    capacity: 12,
+                },
+                {
+                    trek_id: rishikeshTrek.id,
+                    start_date: "2025-09-10",
+                    end_date: "2025-09-13",
+                    capacity: 12,
+                }
+            );
+        }
+
+        // Solang Valley Trek batches
+        const solangTrek = createdTreks.find(
+            (t) => t.title === "Solang Valley Trek"
+        );
+        if (solangTrek) {
+            batchData.push(
+                {
+                    trek_id: solangTrek.id,
+                    start_date: "2025-08-05",
+                    end_date: "2025-08-09",
+                    capacity: 18,
+                },
+                {
+                    trek_id: solangTrek.id,
+                    start_date: "2025-09-20",
+                    end_date: "2025-09-24",
+                    capacity: 18,
+                }
+            );
+        }
+
+        // Triund Trek batches
+        const triundTrek = createdTreks.find((t) => t.title === "Triund Trek");
+        if (triundTrek) {
+            batchData.push(
+                {
+                    trek_id: triundTrek.id,
+                    start_date: "2025-09-15",
+                    end_date: "2025-09-17",
+                    capacity: 15,
+                },
+                {
+                    trek_id: triundTrek.id,
+                    start_date: "2025-10-10",
+                    end_date: "2025-10-12",
+                    capacity: 15,
+                }
+            );
+        }
+
+        // Pangong Lake Trek batches
+        const pangongTrek = createdTreks.find(
+            (t) => t.title === "Pangong Lake Trek"
+        );
+        if (pangongTrek) {
+            batchData.push(
+                {
+                    trek_id: pangongTrek.id,
+                    start_date: "2025-07-25",
+                    end_date: "2025-07-31",
+                    capacity: 10,
+                },
+                {
+                    trek_id: pangongTrek.id,
+                    start_date: "2025-08-20",
+                    end_date: "2025-08-26",
+                    capacity: 10,
+                }
+            );
+        }
+
+        // Khardungla Pass Trek batches
+        const khardunglaTrek = createdTreks.find(
+            (t) => t.title === "Khardungla Pass Trek"
+        );
+        if (khardunglaTrek) {
+            batchData.push(
+                {
+                    trek_id: khardunglaTrek.id,
+                    start_date: "2025-08-10",
+                    end_date: "2025-08-17",
+                    capacity: 8,
+                },
+                {
+                    trek_id: khardunglaTrek.id,
+                    start_date: "2025-09-05",
+                    end_date: "2025-09-12",
+                    capacity: 8,
+                }
+            );
+        }
+
+        // Yumthang Valley Trek batches
+        const yumthangTrek = createdTreks.find(
+            (t) => t.title === "Yumthang Valley Trek"
+        );
+        if (yumthangTrek) {
+            batchData.push(
+                {
+                    trek_id: yumthangTrek.id,
+                    start_date: "2025-05-20",
+                    end_date: "2025-05-25",
+                    capacity: 12,
+                },
+                {
+                    trek_id: yumthangTrek.id,
+                    start_date: "2025-06-15",
+                    end_date: "2025-06-20",
+                    capacity: 12,
+                }
+            );
+        }
+
+        // Lonavala Caves Trek batches
+        const lonavalaTrek = createdTreks.find(
+            (t) => t.title === "Lonavala Caves Trek"
+        );
+        if (lonavalaTrek) {
+            batchData.push(
+                {
+                    trek_id: lonavalaTrek.id,
+                    start_date: "2025-10-15",
+                    end_date: "2025-10-16",
+                    capacity: 25,
+                },
+                {
+                    trek_id: lonavalaTrek.id,
+                    start_date: "2025-11-20",
+                    end_date: "2025-11-21",
+                    capacity: 25,
+                }
+            );
+        }
+
+        // Mysore Palace Trek batches
+        const mysoreTrek = createdTreks.find(
+            (t) => t.title === "Mysore Palace Trek"
+        );
+        if (mysoreTrek) {
+            batchData.push(
+                {
+                    trek_id: mysoreTrek.id,
+                    start_date: "2025-11-10",
+                    end_date: "2025-11-12",
+                    capacity: 20,
+                },
+                {
+                    trek_id: mysoreTrek.id,
+                    start_date: "2025-12-15",
+                    end_date: "2025-12-17",
+                    capacity: 20,
+                }
+            );
+        }
+
+        // Munnar Tea Gardens Trek batches
+        const munnarTrek = createdTreks.find(
+            (t) => t.title === "Munnar Tea Gardens Trek"
+        );
+        if (munnarTrek) {
+            batchData.push(
+                {
+                    trek_id: munnarTrek.id,
+                    start_date: "2025-12-05",
+                    end_date: "2025-12-08",
+                    capacity: 18,
+                },
+                {
+                    trek_id: munnarTrek.id,
+                    start_date: "2026-01-10",
+                    end_date: "2026-01-13",
+                    capacity: 18,
+                }
+            );
+        }
+
+        // Create batches
+        if (batchData.length > 0) {
+            await Batch.bulkCreate(batchData);
+            console.log(`Created ${batchData.length} batches`);
+        }
+
+        // Display created treks count
         console.log(`Created ${createdTreks.length} treks`);
     } catch (error) {
         console.error("Error seeding treks:", error);

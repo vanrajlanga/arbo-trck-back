@@ -112,6 +112,11 @@ exports.getVendorTreks = async (req, res) => {
                     as: "trek_stages",
                     required: false,
                 },
+                {
+                    model: Batch,
+                    as: "batches",
+                    required: false,
+                },
             ],
             order: [["created_at", "DESC"]],
         });
@@ -167,8 +172,11 @@ exports.getVendorTreks = async (req, res) => {
                     total: trek.max_participants || 20,
                     booked: trek.booked_slots || 0,
                 },
-                startDate: trek.start_date,
-                endDate: trek.end_date,
+                multipleDates:
+                    trek.batches?.map((batch) => ({
+                        startDate: batch.start_date,
+                        endDate: batch.end_date,
+                    })) || [],
                 images: trek.images?.map((img) => `/storage/${img.url}`) || [],
                 itinerary:
                     trek.itinerary_items?.map((item) => ({
@@ -189,6 +197,16 @@ exports.getVendorTreks = async (req, res) => {
                         stage_name: stage.stage_name || stage.name || "",
                         means_of_transport: stage.means_of_transport || "",
                         date_time: stage.date_time || "",
+                    })) || [],
+                batches:
+                    trek.batches?.map((batch) => ({
+                        id: batch.id,
+                        startDate: batch.start_date,
+                        endDate: batch.end_date,
+                        capacity: batch.capacity,
+                        bookedSlots: batch.booked_slots || 0,
+                        availableSlots:
+                            batch.capacity - (batch.booked_slots || 0),
                     })) || [],
                 inclusions: parseJsonField(trek.inclusions),
                 exclusions: parseJsonField(trek.exclusions),
@@ -325,8 +343,11 @@ exports.getTrekById = async (req, res) => {
                 total: trek.max_participants || 20,
                 booked: trek.booked_slots || 0,
             },
-            startDate: trek.start_date,
-            endDate: trek.end_date,
+            multipleDates:
+                trek.batches?.map((batch) => ({
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                })) || [],
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             itinerary:
                 trek.itinerary_items?.map((item) => ({
@@ -427,8 +448,6 @@ exports.createTrek = async (req, res) => {
             trekType,
             category,
             maxParticipants,
-            startDate,
-            endDate,
             inclusions,
             exclusions,
             meetingPoint,
@@ -445,6 +464,7 @@ exports.createTrek = async (req, res) => {
             cancellationPolicies,
             otherPolicies,
             activities,
+            batches,
         } = req.body;
 
         // Create the trek
@@ -462,8 +482,6 @@ exports.createTrek = async (req, res) => {
             trek_type: trekType,
             category: category,
             max_participants: maxParticipants || 20,
-            start_date: startDate,
-            end_date: endDate,
             inclusions: ensureJsonArray(inclusions),
             exclusions: ensureJsonArray(exclusions),
             meeting_point: meetingPoint,
@@ -477,6 +495,18 @@ exports.createTrek = async (req, res) => {
             other_policies: ensureJsonArray(otherPolicies),
             activities: ensureJsonArray(activities),
         });
+
+        // Add batches if provided
+        if (batches && Array.isArray(batches)) {
+            const batchItems = batches.map((batch) => ({
+                trek_id: trek.id,
+                start_date: batch.startDate,
+                end_date: batch.endDate,
+                capacity: batch.capacity || maxParticipants || 20,
+            }));
+
+            await Batch.bulkCreate(batchItems);
+        }
 
         console.log(
             "Created trek with trekType:",
@@ -615,8 +645,6 @@ exports.updateTrek = async (req, res) => {
             trekType,
             category,
             maxParticipants,
-            startDate,
-            endDate,
             inclusions,
             exclusions,
             meetingPoint,
@@ -633,6 +661,7 @@ exports.updateTrek = async (req, res) => {
             cancellationPolicies,
             otherPolicies,
             activities,
+            multipleDates,
         } = req.body;
 
         // Find the trek
@@ -664,8 +693,6 @@ exports.updateTrek = async (req, res) => {
             trek_type: trekType,
             category: category,
             max_participants: maxParticipants || 20,
-            start_date: startDate,
-            end_date: endDate,
             inclusions: ensureJsonArray(inclusions),
             exclusions: ensureJsonArray(exclusions),
             meeting_point: meetingPoint,
@@ -678,6 +705,7 @@ exports.updateTrek = async (req, res) => {
             cancellation_policies: ensureJsonArray(cancellationPolicies),
             other_policies: ensureJsonArray(otherPolicies),
             activities: ensureJsonArray(activities),
+            batches: ensureJsonArray(multipleDates),
         });
 
         // Update itinerary items
@@ -1056,8 +1084,11 @@ exports.getAllPublicTreks = async (req, res) => {
             difficulty: trek.difficulty,
             category: trek.category,
             availableSlots: trek.max_participants - trek.booked_slots,
-            startDate: trek.start_date,
-            endDate: trek.end_date,
+            multipleDates:
+                trek.batches?.map((batch) => ({
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                })) || [],
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             trekStages:
                 trek.trek_stages?.map((stage) => ({
@@ -1198,12 +1229,15 @@ exports.getPublicTrekById = async (req, res) => {
             durationNights: trek.duration_nights,
             price: trek.base_price,
             difficulty: trek.difficulty,
-            category: trek.category,
             trekType: trek.trek_type,
+            category: trek.category,
             maxParticipants: trek.max_participants,
             availableSlots: trek.max_participants - trek.booked_slots,
-            startDate: trek.start_date,
-            endDate: trek.end_date,
+            multipleDates:
+                trek.batches?.map((batch) => ({
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                })) || [],
             meetingPoint: trek.meeting_point,
             meetingTime: trek.meeting_time,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
@@ -1226,6 +1260,15 @@ exports.getPublicTrekById = async (req, res) => {
                     stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
                     date_time: stage.date_time || "",
+                })) || [],
+            batches:
+                trek.batches?.map((batch) => ({
+                    id: batch.id,
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                    capacity: batch.capacity,
+                    bookedSlots: batch.booked_slots || 0,
+                    availableSlots: batch.capacity - (batch.booked_slots || 0),
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
@@ -1321,6 +1364,11 @@ exports.getTreksByCategory = async (req, res) => {
             price: trek.base_price,
             difficulty: trek.difficulty,
             availableSlots: trek.max_participants - trek.booked_slots,
+            multipleDates:
+                trek.batches?.map((batch) => ({
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                })) || [],
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             trekStages:
                 trek.trek_stages?.map((stage) => ({
@@ -1408,11 +1456,6 @@ exports.searchTreks = async (req, res) => {
             if (maxPrice) whereClause.base_price[Op.lte] = parseFloat(maxPrice);
         }
 
-        // Filter by start date - treks that start exactly on the specified date
-        if (startDate) {
-            whereClause.start_date = new Date(startDate);
-        }
-
         const treks = await Trek.findAndCountAll({
             where: whereClause,
             include: [
@@ -1456,13 +1499,36 @@ exports.searchTreks = async (req, res) => {
                     as: "trek_stages",
                     required: false,
                 },
+                {
+                    model: Batch,
+                    as: "batches",
+                    required: false,
+                },
             ],
-            order: [["start_date", "ASC"]],
+            order: [["created_at", "DESC"]],
             limit: parseInt(limit),
             offset: (parseInt(page) - 1) * parseInt(limit),
         });
 
-        const transformedTreks = treks.rows.map((trek) => ({
+        // Filter by startDate if provided (check batches)
+        let filteredTreks = treks.rows;
+        if (startDate) {
+            const targetDate = new Date(startDate).toISOString().split("T")[0]; // Convert to YYYY-MM-DD format
+            filteredTreks = treks.rows.filter((trek) => {
+                const batches = trek.batches || [];
+                return batches.some((batch) => {
+                    const batchStartDate = batch.start_date;
+                    if (!batchStartDate) return false;
+                    // Convert batch start date to YYYY-MM-DD format for comparison
+                    const batchDate = new Date(batchStartDate)
+                        .toISOString()
+                        .split("T")[0];
+                    return batchDate === targetDate;
+                });
+            });
+        }
+
+        const transformedTreks = filteredTreks.map((trek) => ({
             id: trek.id,
             name: trek.title,
             description: trek.description,
@@ -1479,8 +1545,11 @@ exports.searchTreks = async (req, res) => {
             category: trek.category,
             maxParticipants: trek.max_participants,
             availableSlots: trek.max_participants - trek.booked_slots,
-            startDate: trek.start_date,
-            endDate: trek.end_date,
+            multipleDates:
+                trek.batches?.map((batch) => ({
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                })) || [],
             meetingPoint: trek.meeting_point,
             meetingTime: trek.meeting_time,
             status: trek.status,
@@ -1491,6 +1560,15 @@ exports.searchTreks = async (req, res) => {
                     stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
                     date_time: stage.date_time || "",
+                })) || [],
+            batches:
+                trek.batches?.map((batch) => ({
+                    id: batch.id,
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                    capacity: batch.capacity,
+                    bookedSlots: batch.booked_slots || 0,
+                    availableSlots: batch.capacity - (batch.booked_slots || 0),
                 })) || [],
             rating: parseFloat(trek.rating) || 0.0,
             hasDiscount: trek.has_discount || false,
@@ -1516,6 +1594,9 @@ exports.searchTreks = async (req, res) => {
             updatedAt: trek.updated_at,
         }));
 
+        // Update count for pagination when filtering by startDate
+        const finalCount = startDate ? filteredTreks.length : treks.count;
+
         res.json({
             success: true,
             data: transformedTreks,
@@ -1532,8 +1613,8 @@ exports.searchTreks = async (req, res) => {
             },
             pagination: {
                 currentPage: parseInt(page),
-                totalPages: Math.ceil(treks.count / parseInt(limit)),
-                totalCount: treks.count,
+                totalPages: Math.ceil(finalCount / parseInt(limit)),
+                totalCount: finalCount,
             },
         });
     } catch (error) {
