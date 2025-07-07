@@ -1132,7 +1132,7 @@ const seedTreks = async () => {
             console.log(`Created ${batchData.length} batches`);
         }
 
-        // Create rating categories
+        // Get or create rating categories
         const ratingCategories = [
             {
                 name: "Safety and Security",
@@ -1160,12 +1160,23 @@ const seedTreks = async () => {
             },
         ];
 
-        await RatingCategory.bulkCreate(ratingCategories);
-        console.log(`Created ${ratingCategories.length} rating categories`);
+        // Use findOrCreate to avoid duplicate entries
+        for (const category of ratingCategories) {
+            await RatingCategory.findOrCreate({
+                where: { name: category.name },
+                defaults: category,
+            });
+        }
+        console.log(
+            `Ensured ${ratingCategories.length} rating categories exist`
+        );
 
         // Create sample reviews and ratings for some treks
         const sampleReviews = [];
         const sampleRatings = [];
+
+        // Get rating categories for creating sample ratings
+        const createdRatingCategories = await RatingCategory.findAll();
 
         // Create sample reviews and ratings for Valley of Flowers Trek
         if (valleyTrek && customers.length > 0) {
@@ -1181,7 +1192,6 @@ const seedTreks = async () => {
             });
 
             // Sample ratings for the same trek and customer
-            const createdRatingCategories = await RatingCategory.findAll();
             createdRatingCategories.forEach((category, index) => {
                 sampleRatings.push({
                     trek_id: valleyTrek.id,
