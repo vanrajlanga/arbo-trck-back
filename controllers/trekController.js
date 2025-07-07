@@ -1575,8 +1575,6 @@ exports.searchTreks = async (req, res) => {
     try {
         const {
             q,
-            page = 1,
-            limit = 10,
             difficulty,
             minPrice,
             maxPrice,
@@ -1615,7 +1613,7 @@ exports.searchTreks = async (req, res) => {
             if (maxPrice) whereClause.base_price[Op.lte] = parseFloat(maxPrice);
         }
 
-        const treks = await Trek.findAndCountAll({
+        const treks = await Trek.findAll({
             where: whereClause,
             include: [
                 {
@@ -1665,15 +1663,13 @@ exports.searchTreks = async (req, res) => {
                 },
             ],
             order: [["created_at", "DESC"]],
-            limit: parseInt(limit),
-            offset: (parseInt(page) - 1) * parseInt(limit),
         });
 
         // Filter by startDate if provided (check batches)
-        let filteredTreks = treks.rows;
+        let filteredTreks = treks;
         if (startDate) {
             const targetDate = new Date(startDate).toISOString().split("T")[0]; // Convert to YYYY-MM-DD format
-            filteredTreks = treks.rows.filter((trek) => {
+            filteredTreks = treks.filter((trek) => {
                 const batches = trek.batches || [];
                 return batches.some((batch) => {
                     const batchStartDate = batch.start_date;
@@ -1747,28 +1743,10 @@ exports.searchTreks = async (req, res) => {
             })
         );
 
-        // Update count for pagination when filtering by startDate
-        const finalCount = startDate ? filteredTreks.length : treks.count;
-
         res.json({
             success: true,
             data: transformedTreks,
             searchQuery: q,
-            filters: {
-                destination_id: destination_id || null,
-                city_id: city_id || null,
-                startDate: startDate || null,
-                difficulty: difficulty || null,
-                priceRange: {
-                    min: minPrice || null,
-                    max: maxPrice || null,
-                },
-            },
-            pagination: {
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(finalCount / parseInt(limit)),
-                totalCount: finalCount,
-            },
         });
     } catch (error) {
         console.error("Error searching treks:", error);
