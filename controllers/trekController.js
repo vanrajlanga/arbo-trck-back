@@ -1229,6 +1229,7 @@ exports.getAllPublicTreks = async (req, res) => {
 exports.getPublicTrekById = async (req, res) => {
     try {
         const { id } = req.params;
+        const { startDate } = req.query;
 
         const trek = await Trek.findOne({
             where: {
@@ -1321,11 +1322,38 @@ exports.getPublicTrekById = async (req, res) => {
             limit: 5, // Get latest 5 reviews
         });
 
-        // Get rating categories for reference
-        const ratingCategories = await RatingCategory.findAll({
-            where: { is_active: true },
-            order: [["sort_order", "ASC"]],
-        });
+        let batchInfo = null;
+
+        if (startDate) {
+            const targetDate = new Date(startDate).toISOString().split("T")[0]; // Convert to YYYY-MM-DD format
+            const matchingBatch = trek.batches?.find((batch) => {
+                const batchStartDate = batch.start_date;
+                if (!batchStartDate) return false;
+                // Convert batch start date to YYYY-MM-DD format for comparison
+                const batchDate = new Date(batchStartDate)
+                    .toISOString()
+                    .split("T")[0];
+                return batchDate === targetDate;
+            });
+
+            if (matchingBatch) {
+                batchInfo = {
+                    startDate: matchingBatch.start_date,
+                    endDate: matchingBatch.end_date,
+                    capacity: matchingBatch.capacity,
+                    bookedSlots: matchingBatch.booked_slots || 0,
+                    availableSlots:
+                        matchingBatch.available_slots ||
+                        matchingBatch.capacity -
+                            (matchingBatch.booked_slots || 0),
+                };
+                // Only include the matching batch in the batches array
+                filteredBatches = [matchingBatch];
+            } else {
+                // No matching batch found, return empty array
+                filteredBatches = [];
+            }
+        }
 
         const transformedTrek = {
             id: trek.id,
@@ -1388,17 +1416,7 @@ exports.getPublicTrekById = async (req, res) => {
                     means_of_transport: stage.means_of_transport || "",
                     date_time: stage.date_time || "",
                 })) || [],
-            batches:
-                trek.batches?.map((batch) => ({
-                    id: batch.id,
-                    startDate: batch.start_date,
-                    endDate: batch.end_date,
-                    capacity: batch.capacity,
-                    bookedSlots: batch.booked_slots || 0,
-                    availableSlots:
-                        batch.available_slots ||
-                        batch.capacity - (batch.booked_slots || 0),
-                })) || [],
+            batchInfo: startDate ? batchInfo : null,
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
             rating: trekRating.overall,
@@ -1432,12 +1450,6 @@ exports.getPublicTrekById = async (req, res) => {
                 isVerified: review.is_verified,
                 isHelpful: review.is_helpful,
                 createdAt: review.created_at,
-            })),
-            ratingCategories: ratingCategories.map((category) => ({
-                id: category.id,
-                name: category.name,
-                description: category.description,
-                sortOrder: category.sort_order,
             })),
             createdAt: trek.created_at,
             updatedAt: trek.updated_at,
