@@ -10,6 +10,9 @@ const {
     Destination,
     City,
     State,
+    Review,
+    Rating,
+    RatingCategory,
 } = require("../models");
 const { validationResult } = require("express-validator");
 const { saveBase64Image, deleteImage } = require("../utils/fileUpload");
@@ -28,6 +31,74 @@ const parseJsonField = (field) => {
         }
     }
     return [];
+};
+
+// Helper function to calculate trek's overall rating from ratings
+const calculateTrekRating = async (trekId) => {
+    try {
+        const ratings = await Rating.findAll({
+            where: {
+                trek_id: trekId,
+            },
+            include: [
+                {
+                    model: RatingCategory,
+                    as: "category",
+                },
+            ],
+        });
+
+        if (ratings.length === 0)
+            return { overall: 0, categories: {}, ratingCount: 0 };
+
+        const categoryRatings = {};
+        const categoryCounts = {};
+
+        // Initialize category ratings
+        const categories = await RatingCategory.findAll({
+            where: { is_active: true },
+        });
+        categories.forEach((cat) => {
+            categoryRatings[cat.name] = 0;
+            categoryCounts[cat.name] = 0;
+        });
+
+        // Calculate category averages
+        ratings.forEach((rating) => {
+            const categoryName = rating.category.name;
+            categoryRatings[categoryName] += parseFloat(rating.rating_value);
+            categoryCounts[categoryName]++;
+        });
+
+        // Calculate averages
+        Object.keys(categoryRatings).forEach((category) => {
+            if (categoryCounts[category] > 0) {
+                categoryRatings[category] = parseFloat(
+                    (
+                        categoryRatings[category] / categoryCounts[category]
+                    ).toFixed(2)
+                );
+            }
+        });
+
+        // Calculate overall average
+        const overallSum = Object.values(categoryRatings).reduce(
+            (sum, rating) => sum + rating,
+            0
+        );
+        const overall = parseFloat(
+            (overallSum / Object.keys(categoryRatings).length).toFixed(2)
+        );
+
+        return {
+            overall,
+            categories: categoryRatings,
+            ratingCount: ratings.length,
+        };
+    } catch (error) {
+        console.error("Error calculating trek rating:", error);
+        return { overall: 0, categories: {}, ratingCount: 0 };
+    }
 };
 
 // Helper function to ensure proper JSON array storage
@@ -134,98 +205,48 @@ exports.getVendorTreks = async (req, res) => {
         );
 
         // Transform data to match frontend format
-        const transformedTreks = treks.map((trek) => {
-            const destinationName = trek.destinationData?.name || "";
-            console.log(`Trek ${trek.id} destination:`, {
-                fromAssociation: trek.destinationData?.name,
-                final: destinationName,
-            });
+        const transformedTreks = await Promise.all(
+            treks.map(async (trek) => {
+                const trekRating = await calculateTrekRating(trek.id);
 
-            return {
-                id: trek.id,
-                name: trek.title,
-                description: trek.description,
-                destination: destinationName,
-                destination_id: trek.destination_id,
-                city_id: trek.city_id,
-                city: trek.city
-                    ? {
-                          id: trek.city.id,
-                          cityName: trek.city.cityName,
-                          state: trek.city.state
-                              ? {
-                                    id: trek.city.state.id,
-                                    name: trek.city.state.name,
-                                }
-                              : null,
-                      }
-                    : null,
-                duration: trek.duration || "",
-                durationDays: trek.duration_days || "",
-                durationNights: trek.duration_nights || "",
-                price: trek.base_price,
-                difficulty: trek.difficulty || "moderate",
-                trekType: trek.trek_type || "",
-                category: trek.category || "",
-                status: trek.status === "published" ? "active" : "draft",
-                multipleDates:
-                    trek.batches?.map((batch) => ({
-                        startDate: batch.start_date,
-                        endDate: batch.end_date,
-                    })) || [],
-                images: trek.images?.map((img) => `/storage/${img.url}`) || [],
-                itinerary:
-                    trek.itinerary_items?.map((item) => ({
-                        day: item.day_number,
-                        activities: item.activities || [],
-                    })) || [],
-                accommodations:
-                    trek.accommodations?.map((acc, index) => ({
-                        night: index + 1,
-                        type: acc.type || "",
-                        date: acc.details?.date || "",
-                        location: acc.details?.location || "",
-                        description: acc.details?.description || "",
-                    })) || [],
-                trekStages:
-                    trek.trek_stages?.map((stage) => ({
-                        id: stage.id,
-                        stage_name: stage.stage_name || stage.name || "",
-                        means_of_transport: stage.means_of_transport || "",
-                        date_time: stage.date_time || "",
-                    })) || [],
-                batches:
-                    trek.batches?.map((batch) => ({
-                        id: batch.id,
-                        startDate: batch.start_date,
-                        endDate: batch.end_date,
-                        capacity: batch.capacity,
-                        bookedSlots: batch.booked_slots || 0,
-                        availableSlots:
-                            batch.capacity - (batch.booked_slots || 0),
-                    })) || [],
-                inclusions: parseJsonField(trek.inclusions),
-                exclusions: parseJsonField(trek.exclusions),
-                meetingPoint: trek.meeting_point || "Not specified",
-                meetingTime: trek.meeting_time || "Not specified",
-                rating: parseFloat(trek.rating) || 0.0,
-                hasDiscount: trek.has_discount || false,
-                discountValue: parseFloat(trek.discount_value) || 0.0,
-                discountType: trek.discount_type || "percentage",
-                discountText: generateDiscountText(
-                    trek.has_discount,
-                    trek.discount_value,
-                    trek.discount_type
-                ),
-                cancellationPolicies: parseJsonField(
-                    trek.cancellation_policies
-                ),
-                otherPolicies: parseJsonField(trek.other_policies),
-                activities: parseJsonField(trek.activities),
-                createdAt: trek.created_at,
-                updatedAt: trek.updated_at,
-            };
-        });
+                return {
+                    id: trek.id,
+                    name: trek.title,
+                    description: trek.description,
+                    destination_id: trek.destination_id,
+                    destination: trek.destinationData?.name || "",
+                    city_id: trek.city_id,
+                    city: trek.city?.cityName || "",
+                    duration: trek.duration,
+                    durationDays: trek.duration_days,
+                    durationNights: trek.duration_nights,
+                    price: trek.base_price,
+                    difficulty: trek.difficulty,
+                    trekType: trek.trek_type,
+                    category: trek.category,
+                    status: trek.status,
+                    meetingPoint: trek.meeting_point || "",
+                    meetingTime: trek.meeting_time || "",
+                    rating: trekRating.overall,
+                    ratingDetails: trekRating,
+                    hasDiscount: trek.has_discount || false,
+                    discountValue: parseFloat(trek.discount_value) || 0.0,
+                    discountType: trek.discount_type || "percentage",
+                    discountText: generateDiscountText(
+                        trek.has_discount,
+                        trek.discount_value,
+                        trek.discount_type
+                    ),
+                    cancellationPolicies: parseJsonField(
+                        trek.cancellation_policies
+                    ),
+                    otherPolicies: parseJsonField(trek.other_policies),
+                    activities: parseJsonField(trek.activities),
+                    createdAt: trek.created_at,
+                    updatedAt: trek.updated_at,
+                };
+            })
+        );
 
         res.json({
             success: true,
@@ -312,6 +333,12 @@ exports.getTrekById = async (req, res) => {
             });
         }
 
+        // Include ratings
+        const trekRating = await calculateTrekRating(trek.id);
+        trek.dataValues.rating = trekRating.overall;
+        trek.dataValues.ratingCount = trekRating.ratingCount;
+        trek.dataValues.categoryRatings = trekRating.categories;
+
         // Transform data to match frontend format
         const transformedTrek = {
             id: trek.id,
@@ -337,14 +364,9 @@ exports.getTrekById = async (req, res) => {
             durationNights: trek.duration_nights || "",
             price: trek.base_price,
             difficulty: trek.difficulty || "moderate",
-            trekType: trek.trek_type || "",
-            category: trek.category || "",
+            trekType: trek.trek_type,
+            category: trek.category,
             status: trek.status === "published" ? "active" : "draft",
-            multipleDates:
-                trek.batches?.map((batch) => ({
-                    startDate: batch.start_date,
-                    endDate: batch.end_date,
-                })) || [],
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             itinerary:
                 trek.itinerary_items?.map((item) => ({
@@ -379,7 +401,9 @@ exports.getTrekById = async (req, res) => {
             exclusions: parseJsonField(trek.exclusions),
             meetingPoint: trek.meeting_point || "",
             meetingTime: trek.meeting_time || "",
-            rating: parseFloat(trek.rating) || 0.0,
+            rating: trek.rating,
+            ratingCount: trek.ratingCount,
+            categoryRatings: trek.categoryRatings,
             hasDiscount: trek.has_discount || false,
             discountValue: parseFloat(trek.discount_value) || 0.0,
             discountType: trek.discount_type || "percentage",
@@ -463,7 +487,6 @@ exports.createTrek = async (req, res) => {
             trekStages,
             images,
             status,
-            rating,
             discountValue,
             discountType,
             hasDiscount,
@@ -488,7 +511,6 @@ exports.createTrek = async (req, res) => {
             trek_type: trekType,
             category: category,
             status: status === "active" ? "published" : "draft",
-            rating: rating || 0.0,
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
@@ -655,7 +677,6 @@ exports.updateTrek = async (req, res) => {
             trekStages,
             images,
             status,
-            rating,
             discountValue,
             discountType,
             hasDiscount,
@@ -694,7 +715,6 @@ exports.updateTrek = async (req, res) => {
             trek_type: trekType,
             category: category,
             status: status === "active" ? "published" : "draft",
-            rating: rating || 0.0,
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
@@ -1124,6 +1144,11 @@ exports.getAllPublicTreks = async (req, res) => {
                     as: "trek_stages",
                     required: false,
                 },
+                {
+                    model: Batch,
+                    as: "batches",
+                    required: false,
+                },
             ],
             order: [["created_at", "DESC"]],
             limit: parseInt(limit),
@@ -1141,11 +1166,6 @@ exports.getAllPublicTreks = async (req, res) => {
             price: trek.base_price,
             difficulty: trek.difficulty,
             category: trek.category,
-            multipleDates:
-                trek.batches?.map((batch) => ({
-                    startDate: batch.start_date,
-                    endDate: batch.end_date,
-                })) || [],
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             trekStages:
                 trek.trek_stages?.map((stage) => ({
@@ -1252,6 +1272,11 @@ exports.getPublicTrekById = async (req, res) => {
                     as: "trek_stages",
                     required: false,
                 },
+                {
+                    model: Batch,
+                    as: "batches",
+                    required: false,
+                },
             ],
         });
 
@@ -1288,11 +1313,6 @@ exports.getPublicTrekById = async (req, res) => {
             difficulty: trek.difficulty,
             trekType: trek.trek_type,
             category: trek.category,
-            multipleDates:
-                trek.batches?.map((batch) => ({
-                    startDate: batch.start_date,
-                    endDate: batch.end_date,
-                })) || [],
             meetingPoint: trek.meeting_point,
             meetingTime: trek.meeting_time,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
@@ -1430,12 +1450,12 @@ exports.getTreksByCategory = async (req, res) => {
             duration: trek.duration,
             price: trek.base_price,
             difficulty: trek.difficulty,
-            availableSlots: trek.max_participants - trek.booked_slots,
-            multipleDates:
-                trek.batches?.map((batch) => ({
-                    startDate: batch.start_date,
-                    endDate: batch.end_date,
-                })) || [],
+            availableSlots:
+                trek.batches?.reduce(
+                    (total, batch) =>
+                        total + (batch.capacity - (batch.booked_slots || 0)),
+                    0
+                ) || 0,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             trekStages:
                 trek.trek_stages?.map((stage) => ({
@@ -1610,11 +1630,6 @@ exports.searchTreks = async (req, res) => {
             difficulty: trek.difficulty,
             trekType: trek.trek_type,
             category: trek.category,
-            multipleDates:
-                trek.batches?.map((batch) => ({
-                    startDate: batch.start_date,
-                    endDate: batch.end_date,
-                })) || [],
             meetingPoint: trek.meeting_point,
             meetingTime: trek.meeting_time,
             status: trek.status,

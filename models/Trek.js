@@ -118,12 +118,6 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM("draft", "published", "archived"),
                 defaultValue: "draft",
             },
-            rating: {
-                type: DataTypes.DECIMAL(3, 2),
-                allowNull: true,
-                defaultValue: 0.0,
-                comment: "Average rating of the trek (0.00 to 5.00)",
-            },
             discount_value: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
@@ -251,6 +245,16 @@ module.exports = (sequelize, DataTypes) => {
         Trek.hasMany(models.WeatherLog, {
             foreignKey: "trek_id",
             as: "weather_logs",
+        });
+
+        // Review and Rating associations
+        Trek.hasMany(models.Review, {
+            foreignKey: "trek_id",
+            as: "reviews",
+        });
+        Trek.hasMany(models.Rating, {
+            foreignKey: "trek_id",
+            as: "ratings",
         });
     };
 

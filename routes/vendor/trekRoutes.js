@@ -6,56 +6,81 @@ const trekController = require("../../controllers/trekController");
 // Validation middleware for trek creation/update
 const validateTrek = [
     body("name")
-        .notEmpty()
-        .withMessage("Trek name is required")
-        .isLength({ min: 3, max: 100 })
-        .withMessage("Trek name must be between 3 and 100 characters"),
+        .isLength({ min: 1, max: 200 })
+        .withMessage("Trek name must be between 1 and 200 characters"),
     body("description")
+        .isLength({ min: 10, max: 2000 })
+        .withMessage("Description must be between 10 and 2000 characters"),
+    body("destination_id")
         .optional()
-        .isLength({ max: 1000 })
-        .withMessage("Description must not exceed 1000 characters"),
-    body("destination")
+        .isInt({ min: 1 })
+        .withMessage("Destination ID must be a positive integer"),
+    body("city_id")
         .optional()
-        .isLength({ max: 100 })
-        .withMessage("Destination must not exceed 100 characters"),
+        .isInt({ min: 1 })
+        .withMessage("City ID must be a positive integer"),
     body("duration")
         .optional()
-        .isLength({ max: 50 })
-        .withMessage("Duration must not exceed 50 characters"),
-    body("price")
+        .isLength({ max: 100 })
+        .withMessage("Duration must be less than 100 characters"),
+    body("durationDays")
         .optional()
+        .isInt({ min: 1 })
+        .withMessage("Duration days must be a positive integer"),
+    body("durationNights")
+        .optional()
+        .isInt({ min: 0 })
+        .withMessage("Duration nights must be a non-negative integer"),
+    body("price")
         .isFloat({ min: 0 })
         .withMessage("Price must be a positive number"),
     body("difficulty")
         .optional()
         .isIn(["easy", "moderate", "difficult", "extreme"])
         .withMessage(
-            "Difficulty must be easy, moderate, difficult, or extreme"
+            "Difficulty must be one of: easy, moderate, difficult, extreme"
         ),
+    body("trekType")
+        .optional()
+        .isIn([
+            "mountain",
+            "forest",
+            "desert",
+            "coastal",
+            "hill-station",
+            "adventure",
+        ])
+        .withMessage(
+            "Trek type must be one of: mountain, forest, desert, coastal, hill-station, adventure"
+        ),
+    body("category")
+        .optional()
+        .isLength({ max: 100 })
+        .withMessage("Category must be less than 100 characters"),
     body("maxParticipants")
         .optional()
-        .isInt({ min: 1, max: 100 })
-        .withMessage("Max participants must be between 1 and 100"),
-    body("startDate")
+        .isInt({ min: 1 })
+        .withMessage("Max participants must be a positive integer"),
+    body("inclusions")
         .optional()
-        .isISO8601()
-        .withMessage("Start date must be a valid date"),
-    body("endDate")
+        .isArray()
+        .withMessage("Inclusions must be an array"),
+    body("exclusions")
         .optional()
-        .isISO8601()
-        .withMessage("End date must be a valid date"),
+        .isArray()
+        .withMessage("Exclusions must be an array"),
     body("meetingPoint")
         .optional()
         .isLength({ max: 200 })
-        .withMessage("Meeting point must not exceed 200 characters"),
+        .withMessage("Meeting point must be less than 200 characters"),
     body("meetingTime")
         .optional()
         .isLength({ max: 50 })
-        .withMessage("Meeting time must not exceed 50 characters"),
-    body("rating")
+        .withMessage("Meeting time must be less than 50 characters"),
+    body("status")
         .optional()
-        .isFloat({ min: 0, max: 5 })
-        .withMessage("Rating must be between 0 and 5"),
+        .isIn(["active", "inactive"])
+        .withMessage("Status must be active or inactive"),
     body("discountValue")
         .optional()
         .isFloat({ min: 0 })
