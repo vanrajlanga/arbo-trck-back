@@ -12,31 +12,21 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 references: { model: "treks", key: "id" },
             },
-            stage_number: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-            },
-            name: {
+            stage_name: {
                 type: DataTypes.STRING,
                 allowNull: false,
-            },
-            description: {
-                type: DataTypes.TEXT,
-                allowNull: true,
-            },
-            distance: {
-                type: DataTypes.STRING,
-                allowNull: true,
-            },
-            duration: {
-                type: DataTypes.STRING,
-                allowNull: true,
+                comment: "Name of the trek stage",
             },
             means_of_transport: {
                 type: DataTypes.STRING,
                 allowNull: true,
                 comment:
                     "Means of transport for this trek stage (e.g., walking, bus, train, flight, etc.)",
+            },
+            date_time: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "Date and time for the stage",
             },
         },
         {

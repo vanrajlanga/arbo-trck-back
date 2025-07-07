@@ -186,11 +186,9 @@ exports.getVendorTreks = async (req, res) => {
                 trekStages:
                     trek.trek_stages?.map((stage) => ({
                         id: stage.id,
-                        name: stage.name,
-                        description: stage.description,
-                        distance: stage.distance,
-                        duration: stage.duration,
+                        stage_name: stage.stage_name || stage.name || "",
                         means_of_transport: stage.means_of_transport || "",
+                        date_time: stage.date_time || "",
                     })) || [],
                 inclusions: parseJsonField(trek.inclusions),
                 exclusions: parseJsonField(trek.exclusions),
@@ -346,11 +344,9 @@ exports.getTrekById = async (req, res) => {
             trekStages:
                 trek.trek_stages?.map((stage) => ({
                     id: stage.id,
-                    name: stage.name,
-                    description: stage.description,
-                    distance: stage.distance,
-                    duration: stage.duration,
+                    stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
+                    date_time: stage.date_time || "",
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
@@ -540,12 +536,9 @@ exports.createTrek = async (req, res) => {
         if (trekStages && Array.isArray(trekStages)) {
             const stageItems = trekStages.map((stage, index) => ({
                 trek_id: trek.id,
-                stage_number: index + 1,
-                name: stage.name || "",
-                description: stage.description || "",
-                distance: stage.distance || "",
-                duration: stage.duration || "",
+                stage_name: stage.stage_name || stage.name || "",
                 means_of_transport: stage.means_of_transport || "",
+                date_time: stage.date_time || "",
             }));
 
             await TrekStage.bulkCreate(stageItems);
@@ -748,12 +741,9 @@ exports.updateTrek = async (req, res) => {
             // Create new trek stages
             const stageItems = trekStages.map((stage, index) => ({
                 trek_id: trek.id,
-                stage_number: index + 1,
-                name: stage.name || "",
-                description: stage.description || "",
-                distance: stage.distance || "",
-                duration: stage.duration || "",
+                stage_name: stage.stage_name || stage.name || "",
                 means_of_transport: stage.means_of_transport || "",
+                date_time: stage.date_time || "",
             }));
 
             await TrekStage.bulkCreate(stageItems);
@@ -1072,11 +1062,9 @@ exports.getAllPublicTreks = async (req, res) => {
             trekStages:
                 trek.trek_stages?.map((stage) => ({
                     id: stage.id,
-                    name: stage.name,
-                    description: stage.description,
-                    distance: stage.distance,
-                    duration: stage.duration,
+                    stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
+                    date_time: stage.date_time || "",
                 })) || [],
             rating: parseFloat(trek.rating) || 0.0,
             hasDiscount: trek.has_discount || false,
@@ -1235,11 +1223,9 @@ exports.getPublicTrekById = async (req, res) => {
             trekStages:
                 trek.trek_stages?.map((stage) => ({
                     id: stage.id,
-                    name: stage.name,
-                    description: stage.description,
-                    distance: stage.distance,
-                    duration: stage.duration,
+                    stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
+                    date_time: stage.date_time || "",
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
@@ -1339,11 +1325,9 @@ exports.getTreksByCategory = async (req, res) => {
             trekStages:
                 trek.trek_stages?.map((stage) => ({
                     id: stage.id,
-                    name: stage.name,
-                    description: stage.description,
-                    distance: stage.distance,
-                    duration: stage.duration,
+                    stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
+                    date_time: stage.date_time || "",
                 })) || [],
             rating: parseFloat(trek.rating) || 0.0,
             hasDiscount: trek.has_discount || false,
@@ -1424,9 +1408,9 @@ exports.searchTreks = async (req, res) => {
             if (maxPrice) whereClause.base_price[Op.lte] = parseFloat(maxPrice);
         }
 
-        // Filter by start date - treks that start on or after the specified date
+        // Filter by start date - treks that start exactly on the specified date
         if (startDate) {
-            whereClause.start_date = { [Op.gte]: new Date(startDate) };
+            whereClause.start_date = new Date(startDate);
         }
 
         const treks = await Trek.findAndCountAll({
@@ -1504,11 +1488,9 @@ exports.searchTreks = async (req, res) => {
             trekStages:
                 trek.trek_stages?.map((stage) => ({
                     id: stage.id,
-                    name: stage.name,
-                    description: stage.description,
-                    distance: stage.distance,
-                    duration: stage.duration,
+                    stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
+                    date_time: stage.date_time || "",
                 })) || [],
             rating: parseFloat(trek.rating) || 0.0,
             hasDiscount: trek.has_discount || false,
