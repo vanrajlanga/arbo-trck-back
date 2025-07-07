@@ -70,14 +70,6 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: true,
             },
-            max_participants: {
-                type: DataTypes.INTEGER,
-                defaultValue: 20,
-            },
-            booked_slots: {
-                type: DataTypes.INTEGER,
-                defaultValue: 0,
-            },
             meeting_point: {
                 type: DataTypes.STRING,
                 allowNull: true,

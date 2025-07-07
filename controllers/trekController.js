@@ -168,10 +168,6 @@ exports.getVendorTreks = async (req, res) => {
                 trekType: trek.trek_type || "",
                 category: trek.category || "",
                 status: trek.status === "published" ? "active" : "draft",
-                slots: {
-                    total: trek.max_participants || 20,
-                    booked: trek.booked_slots || 0,
-                },
                 multipleDates:
                     trek.batches?.map((batch) => ({
                         startDate: batch.start_date,
@@ -301,6 +297,11 @@ exports.getTrekById = async (req, res) => {
                     as: "trek_stages",
                     required: false,
                 },
+                {
+                    model: Batch,
+                    as: "batches",
+                    required: false,
+                },
             ],
         });
 
@@ -339,10 +340,6 @@ exports.getTrekById = async (req, res) => {
             trekType: trek.trek_type || "",
             category: trek.category || "",
             status: trek.status === "published" ? "active" : "draft",
-            slots: {
-                total: trek.max_participants || 20,
-                booked: trek.booked_slots || 0,
-            },
             multipleDates:
                 trek.batches?.map((batch) => ({
                     startDate: batch.start_date,
@@ -368,6 +365,15 @@ exports.getTrekById = async (req, res) => {
                     stage_name: stage.stage_name || stage.name || "",
                     means_of_transport: stage.means_of_transport || "",
                     date_time: stage.date_time || "",
+                })) || [],
+            batches:
+                trek.batches?.map((batch) => ({
+                    id: batch.id,
+                    startDate: batch.start_date,
+                    endDate: batch.end_date,
+                    capacity: batch.capacity,
+                    bookedSlots: batch.booked_slots || 0,
+                    availableSlots: batch.capacity - (batch.booked_slots || 0),
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
@@ -481,11 +487,6 @@ exports.createTrek = async (req, res) => {
             difficulty: difficulty || "moderate",
             trek_type: trekType,
             category: category,
-            max_participants: maxParticipants || 20,
-            inclusions: ensureJsonArray(inclusions),
-            exclusions: ensureJsonArray(exclusions),
-            meeting_point: meetingPoint,
-            meeting_time: meetingTime,
             status: status === "active" ? "published" : "draft",
             rating: rating || 0.0,
             discount_value: discountValue || 0.0,
@@ -661,7 +662,7 @@ exports.updateTrek = async (req, res) => {
             cancellationPolicies,
             otherPolicies,
             activities,
-            multipleDates,
+            batches,
         } = req.body;
 
         // Find the trek
@@ -692,11 +693,6 @@ exports.updateTrek = async (req, res) => {
             difficulty: difficulty || "moderate",
             trek_type: trekType,
             category: category,
-            max_participants: maxParticipants || 20,
-            inclusions: ensureJsonArray(inclusions),
-            exclusions: ensureJsonArray(exclusions),
-            meeting_point: meetingPoint,
-            meeting_time: meetingTime,
             status: status === "active" ? "published" : "draft",
             rating: rating || 0.0,
             discount_value: discountValue || 0.0,
@@ -705,8 +701,70 @@ exports.updateTrek = async (req, res) => {
             cancellation_policies: ensureJsonArray(cancellationPolicies),
             other_policies: ensureJsonArray(otherPolicies),
             activities: ensureJsonArray(activities),
-            batches: ensureJsonArray(multipleDates),
         });
+
+        // Update batches
+        if (batches && Array.isArray(batches)) {
+            console.log("Processing batches for update:", batches);
+
+            // Get existing batches
+            const existingBatches = await Batch.findAll({
+                where: { trek_id: id },
+            });
+
+            // Create a map of existing batch IDs for quick lookup
+            const existingBatchIds = new Set(
+                existingBatches.map((batch) => batch.id)
+            );
+
+            // Process each batch from the request
+            for (const batchData of batches) {
+                if (batchData.id && existingBatchIds.has(batchData.id)) {
+                    // Update existing batch
+                    await Batch.update(
+                        {
+                            start_date: batchData.startDate,
+                            end_date: batchData.endDate,
+                            capacity: batchData.capacity || 20,
+                        },
+                        {
+                            where: {
+                                id: batchData.id,
+                                trek_id: id,
+                            },
+                        }
+                    );
+                    console.log(`Updated batch ${batchData.id}`);
+                } else {
+                    // Create new batch
+                    await Batch.create({
+                        trek_id: id,
+                        start_date: batchData.startDate,
+                        end_date: batchData.endDate,
+                        capacity: batchData.capacity || 20,
+                    });
+                    console.log(`Created new batch for trek ${id}`);
+                }
+            }
+
+            // Delete batches that are no longer in the request
+            const incomingBatchIds = batches
+                .filter((batch) => batch.id)
+                .map((batch) => batch.id);
+
+            const batchesToDelete = existingBatches.filter(
+                (batch) => !incomingBatchIds.includes(batch.id)
+            );
+
+            for (const batchToDelete of batchesToDelete) {
+                await batchToDelete.destroy();
+                console.log(`Deleted batch ${batchToDelete.id}`);
+            }
+        } else {
+            // If no batches provided, delete all existing batches
+            await Batch.destroy({ where: { trek_id: id } });
+            console.log(`Deleted all batches for trek ${id}`);
+        }
 
         // Update itinerary items
         if (itinerary && Array.isArray(itinerary)) {
@@ -1083,7 +1141,6 @@ exports.getAllPublicTreks = async (req, res) => {
             price: trek.base_price,
             difficulty: trek.difficulty,
             category: trek.category,
-            availableSlots: trek.max_participants - trek.booked_slots,
             multipleDates:
                 trek.batches?.map((batch) => ({
                     startDate: batch.start_date,
@@ -1231,8 +1288,6 @@ exports.getPublicTrekById = async (req, res) => {
             difficulty: trek.difficulty,
             trekType: trek.trek_type,
             category: trek.category,
-            maxParticipants: trek.max_participants,
-            availableSlots: trek.max_participants - trek.booked_slots,
             multipleDates:
                 trek.batches?.map((batch) => ({
                     startDate: batch.start_date,
@@ -1247,13 +1302,25 @@ exports.getPublicTrekById = async (req, res) => {
                     activities: item.activities || [],
                 })) || [],
             accommodations:
-                trek.accommodations?.map((acc, index) => ({
-                    night: index + 1,
-                    type: acc.type,
-                    date: acc.details?.date || "",
-                    location: acc.details?.location || "",
-                    description: acc.details?.description || "",
-                })) || [],
+                trek.accommodations?.map((acc, index) => {
+                    let dayName = "";
+                    if (acc.details?.date) {
+                        const dateObj = new Date(acc.details.date);
+                        if (!isNaN(dateObj)) {
+                            dayName = dateObj.toLocaleDateString("en-US", {
+                                weekday: "long",
+                            });
+                        }
+                    }
+                    return {
+                        night: index + 1,
+                        type: acc.type,
+                        date: acc.details?.date || "",
+                        dayName,
+                        location: acc.details?.location || "",
+                        description: acc.details?.description || "",
+                    };
+                }) || [],
             trekStages:
                 trek.trek_stages?.map((stage) => ({
                     id: stage.id,
@@ -1543,8 +1610,6 @@ exports.searchTreks = async (req, res) => {
             difficulty: trek.difficulty,
             trekType: trek.trek_type,
             category: trek.category,
-            maxParticipants: trek.max_participants,
-            availableSlots: trek.max_participants - trek.booked_slots,
             multipleDates:
                 trek.batches?.map((batch) => ({
                     startDate: batch.start_date,

@@ -52,8 +52,6 @@ const seedTreks = async () => {
                 trek_type: "mountain",
                 category: "Flower Valley Trek",
                 base_price: 15999.0,
-                max_participants: 15,
-                booked_slots: 0,
                 meeting_point: "Dehradun Railway Station",
                 meeting_time: "08:00 AM",
                 inclusions: JSON.stringify([
@@ -137,8 +135,6 @@ const seedTreks = async () => {
                 trek_type: "mountain",
                 category: "Pilgrimage Trek",
                 base_price: 12999.0,
-                max_participants: 20,
-                booked_slots: 0,
                 meeting_point: "Haridwar Bus Stand",
                 meeting_time: "07:00 AM",
                 inclusions: JSON.stringify([
@@ -213,8 +209,6 @@ const seedTreks = async () => {
                 trek_type: "adventure",
                 category: "Adventure Trek",
                 base_price: 8999.0,
-                max_participants: 12,
-                booked_slots: 0,
                 meeting_point: "Rishikesh Railway Station",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -291,8 +285,6 @@ const seedTreks = async () => {
                 trek_type: "hill-station",
                 category: "Valley Trek",
                 base_price: 11999.0,
-                max_participants: 18,
-                booked_slots: 0,
                 meeting_point: "Manali Bus Stand",
                 meeting_time: "08:30 AM",
                 inclusions: JSON.stringify([
@@ -367,8 +359,6 @@ const seedTreks = async () => {
                 trek_type: "mountain",
                 category: "Mountain Trek",
                 base_price: 6999.0,
-                max_participants: 15,
-                booked_slots: 0,
                 meeting_point: "McLeod Ganj Bus Stand",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -445,8 +435,6 @@ const seedTreks = async () => {
                 trek_type: "mountain",
                 category: "High Altitude Trek",
                 base_price: 24999.0,
-                max_participants: 10,
-                booked_slots: 0,
                 meeting_point: "Leh Airport",
                 meeting_time: "10:00 AM",
                 inclusions: JSON.stringify([
@@ -521,8 +509,6 @@ const seedTreks = async () => {
                 trek_type: "mountain",
                 category: "Extreme Trek",
                 base_price: 29999.0,
-                max_participants: 8,
-                booked_slots: 0,
                 meeting_point: "Leh Airport",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -599,8 +585,6 @@ const seedTreks = async () => {
                 trek_type: "mountain",
                 category: "Valley Trek",
                 base_price: 18999.0,
-                max_participants: 12,
-                booked_slots: 0,
                 meeting_point: "Gangtok Bus Stand",
                 meeting_time: "08:00 AM",
                 inclusions: JSON.stringify([
@@ -677,8 +661,6 @@ const seedTreks = async () => {
                 trek_type: "forest",
                 category: "Cave Trek",
                 base_price: 4999.0,
-                max_participants: 25,
-                booked_slots: 0,
                 meeting_point: "Lonavala Railway Station",
                 meeting_time: "10:00 AM",
                 inclusions: JSON.stringify([
@@ -746,8 +728,6 @@ const seedTreks = async () => {
                 trek_type: "hill-station",
                 category: "Cultural Trek",
                 base_price: 7999.0,
-                max_participants: 20,
-                booked_slots: 0,
                 meeting_point: "Mysore Railway Station",
                 meeting_time: "09:00 AM",
                 inclusions: JSON.stringify([
@@ -824,8 +804,6 @@ const seedTreks = async () => {
                 trek_type: "hill-station",
                 category: "Tea Garden Trek",
                 base_price: 9999.0,
-                max_participants: 18,
-                booked_slots: 0,
                 meeting_point: "Munnar Bus Stand",
                 meeting_time: "08:30 AM",
                 inclusions: JSON.stringify([
