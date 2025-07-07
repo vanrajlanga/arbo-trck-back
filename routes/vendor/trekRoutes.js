@@ -17,8 +17,11 @@ const validateTrek = [
         .withMessage("Destination ID must be a positive integer"),
     body("city_id")
         .optional()
-        .isInt({ min: 1 })
-        .withMessage("City ID must be a positive integer"),
+        .custom((value) => {
+            if (value === null || value === undefined) return true;
+            return Number.isInteger(value) && value > 0;
+        })
+        .withMessage("City ID must be null or a positive integer"),
     body("duration")
         .optional()
         .isLength({ max: 100 })
@@ -79,8 +82,8 @@ const validateTrek = [
         .withMessage("Meeting time must be less than 50 characters"),
     body("status")
         .optional()
-        .isIn(["active", "inactive"])
-        .withMessage("Status must be active or inactive"),
+        .isIn(["active", "deactive"])
+        .withMessage("Status must be active or deactive"),
     body("discountValue")
         .optional()
         .isFloat({ min: 0 })

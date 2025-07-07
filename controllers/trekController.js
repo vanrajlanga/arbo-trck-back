@@ -517,6 +517,8 @@ exports.createTrek = async (req, res) => {
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
+            inclusions: ensureJsonArray(inclusions),
+            exclusions: ensureJsonArray(exclusions),
             cancellation_policies: ensureJsonArray(cancellationPolicies),
             other_policies: ensureJsonArray(otherPolicies),
             activities: ensureJsonArray(activities),
@@ -689,6 +691,18 @@ exports.updateTrek = async (req, res) => {
             batches,
         } = req.body;
 
+        // Debug logging for inclusions and exclusions
+        console.log("updateTrek - raw inclusions:", inclusions);
+        console.log("updateTrek - raw exclusions:", exclusions);
+        console.log(
+            "updateTrek - processed inclusions:",
+            ensureJsonArray(inclusions)
+        );
+        console.log(
+            "updateTrek - processed exclusions:",
+            ensureJsonArray(exclusions)
+        );
+
         // Find the trek
         const trek = await Trek.findOne({
             where: {
@@ -721,6 +735,8 @@ exports.updateTrek = async (req, res) => {
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
+            inclusions: ensureJsonArray(inclusions),
+            exclusions: ensureJsonArray(exclusions),
             cancellation_policies: ensureJsonArray(cancellationPolicies),
             other_policies: ensureJsonArray(otherPolicies),
             activities: ensureJsonArray(activities),
