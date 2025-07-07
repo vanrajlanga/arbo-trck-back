@@ -80,10 +80,6 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: "booking_id",
             as: "booking",
         });
-        Review.hasMany(models.Rating, {
-            foreignKey: "review_id",
-            as: "ratings",
-        });
     };
 
     return Review;
