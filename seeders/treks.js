@@ -77,6 +77,50 @@ const seedTreks = async () => {
                 discount_value: 10.0,
                 discount_type: "percentage",
                 has_discount: true,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Dehradun",
+                            "Briefing session",
+                            "Equipment check",
+                            "Acclimatization walk",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Drive to Govindghat",
+                            "Trek to Ghangaria",
+                            "Camp setup",
+                            "Evening briefing",
+                        ],
+                    },
+                    {
+                        day: 3,
+                        activities: [
+                            "Trek to Valley of Flowers",
+                            "Flower photography",
+                            "Nature walk",
+                            "Return to camp",
+                        ],
+                    },
+                ]),
             },
             {
                 title: "Kedarnath Temple Trek",
@@ -117,6 +161,41 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Haridwar",
+                            "Ganga Aarti",
+                            "Briefing session",
+                            "Equipment check",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Drive to Gaurikund",
+                            "Trek to Kedarnath",
+                            "Temple visit",
+                            "Evening prayers",
+                        ],
+                    },
+                ]),
             },
             {
                 title: "Rishikesh Adventure Trek",
@@ -157,6 +236,41 @@ const seedTreks = async () => {
                 discount_value: 500.0,
                 discount_type: "fixed",
                 has_discount: true,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Rishikesh",
+                            "Safety briefing",
+                            "Equipment fitting",
+                            "Evening meditation",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "River rafting",
+                            "Rock climbing",
+                            "Adventure training",
+                            "Campfire dinner",
+                        ],
+                    },
+                ]),
             },
 
             // Himachal Pradesh Treks
@@ -199,6 +313,41 @@ const seedTreks = async () => {
                 discount_value: 15.0,
                 discount_type: "percentage",
                 has_discount: true,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Manali",
+                            "Local sightseeing",
+                            "Equipment briefing",
+                            "Acclimatization",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Drive to Solang Valley",
+                            "Adventure activities",
+                            "Mountain biking",
+                            "Camp setup",
+                        ],
+                    },
+                ]),
             },
             {
                 title: "Triund Trek",
@@ -239,6 +388,41 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at McLeod Ganj",
+                            "Briefing session",
+                            "Equipment check",
+                            "Local exploration",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Trek to Triund",
+                            "Sunset viewing",
+                            "Camping experience",
+                            "Stargazing",
+                        ],
+                    },
+                ]),
             },
 
             // Ladakh Treks
@@ -281,6 +465,41 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Leh",
+                            "Acclimatization",
+                            "Medical checkup",
+                            "Briefing session",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Drive to Pangong",
+                            "Lake exploration",
+                            "Photography session",
+                            "Camp setup",
+                        ],
+                    },
+                ]),
             },
             {
                 title: "Khardungla Pass Trek",
@@ -321,6 +540,41 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Leh",
+                            "Medical assessment",
+                            "Equipment check",
+                            "Acclimatization",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Drive to Khardungla",
+                            "Altitude training",
+                            "Safety briefing",
+                            "Camp preparation",
+                        ],
+                    },
+                ]),
             },
 
             // Sikkim Treks
@@ -363,6 +617,41 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Gangtok",
+                            "Permit processing",
+                            "Briefing session",
+                            "Local exploration",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Drive to Lachung",
+                            "Valley exploration",
+                            "Hot spring visit",
+                            "Cultural experience",
+                        ],
+                    },
+                ]),
             },
 
             // Maharashtra Treks
@@ -405,6 +694,32 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Lonavala",
+                            "Cave exploration",
+                            "Historical tour",
+                            "Local cuisine",
+                        ],
+                    },
+                ]),
             },
 
             // Karnataka Treks
@@ -447,6 +762,41 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Mysore",
+                            "Palace visit",
+                            "Cultural tour",
+                            "Evening light show",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Heritage walk",
+                            "Local market visit",
+                            "Traditional dance",
+                            "Cultural workshop",
+                        ],
+                    },
+                ]),
             },
 
             // Kerala Treks
@@ -489,6 +839,41 @@ const seedTreks = async () => {
                 discount_value: 0.0,
                 discount_type: "percentage",
                 has_discount: false,
+                cancellation_policies: JSON.stringify({
+                    title: "Cancellation Policy",
+                    description: "Standard cancellation terms and conditions",
+                    rules: [
+                        { rule: "Full refund", deduction: "0%" },
+                        { rule: "Partial refund", deduction: "50%" },
+                        { rule: "No refund", deduction: "100%" },
+                    ],
+                    descriptionPoints: [
+                        "Cancellation must be made in writing",
+                        "Refunds processed within 5-7 business days",
+                        "Force majeure events may affect cancellation terms",
+                    ],
+                }),
+                other_policies: JSON.stringify([]),
+                activities: JSON.stringify([
+                    {
+                        day: 1,
+                        activities: [
+                            "Arrival at Munnar",
+                            "Tea estate tour",
+                            "Plantation walk",
+                            "Tea tasting",
+                        ],
+                    },
+                    {
+                        day: 2,
+                        activities: [
+                            "Tea processing visit",
+                            "Garden trekking",
+                            "Local culture",
+                            "Sunset viewing",
+                        ],
+                    },
+                ]),
             },
         ];
 
