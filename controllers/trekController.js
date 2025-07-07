@@ -1721,62 +1721,28 @@ exports.searchTreks = async (req, res) => {
                     }
                 }
 
+                // Return only the requested fields
                 return {
                     id: trek.id,
                     name: trek.title,
-                    description: trek.description,
-                    destination: trek.destinationData?.name || "",
-                    destination_id: trek.destination_id,
-                    city_id: trek.city_id,
-                    city: trek.city?.cityName || "",
-                    duration: trek.duration,
-                    durationDays: trek.duration_days,
-                    durationNights: trek.duration_nights,
-                    price: trek.base_price,
-                    difficulty: trek.difficulty,
-                    trekType: trek.trek_type,
-                    category: trek.category,
-                    meetingPoint: trek.meeting_point,
-                    meetingTime: trek.meeting_time,
-                    status: trek.status,
-                    images:
-                        trek.images?.map((img) => `/storage/${img.url}`) || [],
-                    trekStages:
-                        trek.trek_stages?.map((stage) => ({
-                            id: stage.id,
-                            stage_name: stage.stage_name || stage.name || "",
-                            means_of_transport: stage.means_of_transport || "",
-                            date_time: stage.date_time || "",
-                        })) || [],
-                    // Include batch info for searched date instead of full batches array
-                    batchInfo,
-                    // Rating details
-                    rating: trekRating.overall,
-                    ratingCount: trekRating.ratingCount,
-                    categoryRatings: trekRating.categories,
+                    vendor: {
+                        name: trek.vendor.user?.name || "Unknown Vendor",
+                    },
                     hasDiscount: trek.has_discount || false,
-                    discountValue: parseFloat(trek.discount_value) || 0.0,
-                    discountType: trek.discount_type || "percentage",
                     discountText: generateDiscountText(
                         trek.has_discount,
                         trek.discount_value,
                         trek.discount_type
                     ),
-                    cancellationPolicies: parseJsonField(
-                        trek.cancellation_policies
-                    ),
-                    otherPolicies: parseJsonField(trek.other_policies),
-                    activities: parseJsonField(trek.activities),
-                    vendor: {
-                        id: trek.vendor.id,
-                        name: trek.vendor.user?.name || "Unknown Vendor",
-                        email: trek.vendor.user?.email || "",
-                        phone: trek.vendor.user?.phone || "",
-                        rating: 4.0, // Default rating since not stored in database
-                        status: trek.vendor.status,
-                    },
-                    createdAt: trek.created_at,
-                    updatedAt: trek.updated_at,
+                    rating: trekRating.overall,
+                    price: trek.base_price,
+                    duration: trek.duration,
+                    batchInfo: batchInfo
+                        ? {
+                              startDate: batchInfo.startDate,
+                              availableSlots: batchInfo.availableSlots,
+                          }
+                        : null,
                 };
             })
         );
