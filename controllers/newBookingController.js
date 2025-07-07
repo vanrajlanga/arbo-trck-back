@@ -11,6 +11,10 @@ const {
 } = require("../models");
 const { Op } = require("sequelize");
 const sequelize = require("../models").sequelize;
+const {
+    updateBatchSlotsOnBooking,
+    updateBatchSlotsOnCancellation,
+} = require("../utils/batchSlotManager");
 
 // Create a new booking with travelers
 const createBooking = async (req, res) => {
@@ -42,7 +46,7 @@ const createBooking = async (req, res) => {
             });
         }
 
-        if (trek.status !== "published") {
+        if (trek.status !== "active") {
             await transaction.rollback();
             return res.status(400).json({
                 success: false,
@@ -275,6 +279,15 @@ const createBooking = async (req, res) => {
             { transaction }
         );
 
+        // Update batch slots if batch_id is provided
+        if (batch_id) {
+            await updateBatchSlotsOnBooking(
+                batch_id,
+                totalTravelers,
+                transaction
+            );
+        }
+
         await transaction.commit();
 
         // Fetch complete booking data
@@ -448,6 +461,15 @@ const cancelBooking = async (req, res) => {
                 transaction,
             }
         );
+
+        // Update batch slots if batch_id exists
+        if (booking.batch_id) {
+            await updateBatchSlotsOnCancellation(
+                booking.batch_id,
+                booking.total_travelers,
+                transaction
+            );
+        }
 
         // TODO: Process refund based on cancellation policy
         // TODO: Send cancellation notification

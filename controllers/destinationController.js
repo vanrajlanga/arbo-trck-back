@@ -83,7 +83,7 @@ const getDestinationById = async (req, res) => {
                         "status",
                         "base_price",
                     ],
-                    where: { status: "published" },
+                    where: { status: "active" },
                     required: false,
                 },
             ],

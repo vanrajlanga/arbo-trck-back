@@ -37,10 +37,11 @@ const createBooking = async (req, res) => {
             return res.status(404).json({ message: "Trek not found" });
         }
 
-        if (trek.status !== "published") {
-            return res
-                .status(400)
-                .json({ message: "Trek is not available for booking" });
+        if (trek.status !== "active") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot book inactive trek",
+            });
         }
 
         // Check available slots
@@ -675,10 +676,11 @@ const createVendorBooking = async (req, res) => {
                 .json({ message: "Trek does not belong to this vendor" });
         }
 
-        if (trek.status !== "published") {
-            return res
-                .status(400)
-                .json({ message: "Trek is not available for booking" });
+        if (trek.status !== "active") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot book inactive trek",
+            });
         }
 
         // Validate customer exists

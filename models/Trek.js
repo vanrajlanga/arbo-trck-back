@@ -115,8 +115,8 @@ module.exports = (sequelize, DataTypes) => {
                 },
             },
             status: {
-                type: DataTypes.ENUM("draft", "published", "archived"),
-                defaultValue: "draft",
+                type: DataTypes.ENUM("active", "deactive"),
+                defaultValue: "deactive",
             },
             discount_value: {
                 type: DataTypes.DECIMAL(10, 2),

@@ -13,6 +13,7 @@ const {
     Review,
     Rating,
     RatingCategory,
+    Customer,
 } = require("../models");
 const { validationResult } = require("express-validator");
 const { saveBase64Image, deleteImage } = require("../utils/fileUpload");
@@ -366,7 +367,7 @@ exports.getTrekById = async (req, res) => {
             difficulty: trek.difficulty || "moderate",
             trekType: trek.trek_type,
             category: trek.category,
-            status: trek.status === "published" ? "active" : "draft",
+            status: trek.status === "active" ? "active" : "deactive",
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
             itinerary:
                 trek.itinerary_items?.map((item) => ({
@@ -395,7 +396,9 @@ exports.getTrekById = async (req, res) => {
                     endDate: batch.end_date,
                     capacity: batch.capacity,
                     bookedSlots: batch.booked_slots || 0,
-                    availableSlots: batch.capacity - (batch.booked_slots || 0),
+                    availableSlots:
+                        batch.available_slots ||
+                        batch.capacity - (batch.booked_slots || 0),
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
@@ -510,7 +513,7 @@ exports.createTrek = async (req, res) => {
             difficulty: difficulty || "moderate",
             trek_type: trekType,
             category: category,
-            status: status === "active" ? "published" : "draft",
+            status: status === "active" ? "active" : "deactive",
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
@@ -714,7 +717,7 @@ exports.updateTrek = async (req, res) => {
             difficulty: difficulty || "moderate",
             trek_type: trekType,
             category: category,
-            status: status === "active" ? "published" : "draft",
+            status: status === "active" ? "active" : "deactive",
             discount_value: discountValue || 0.0,
             discount_type: discountType || "percentage",
             has_discount: hasDiscount || false,
@@ -1007,13 +1010,13 @@ exports.toggleTrekStatus = async (req, res) => {
             });
         }
 
-        const newStatus = trek.status === "published" ? "draft" : "published";
+        const newStatus = trek.status === "active" ? "deactive" : "active";
         await trek.update({ status: newStatus });
 
         res.json({
             success: true,
             message: `Trek ${
-                newStatus === "published" ? "activated" : "deactivated"
+                newStatus === "active" ? "activated" : "deactivated"
             } successfully`,
             data: {
                 id: trek.id,
@@ -1068,7 +1071,7 @@ exports.getAllTreks = async (req, res) => {
             duration: trek.duration || "Not specified",
             price: trek.base_price,
             difficulty: trek.difficulty || "moderate",
-            status: trek.status === "published" ? "active" : "draft",
+            status: trek.status === "active" ? "active" : "deactive",
             vendorName: trek.vendor?.user?.name || "Unknown Vendor",
             vendorId: trek.vendor_id,
             images: trek.images?.map((img) => `/storage/${img.url}`) || [],
@@ -1103,7 +1106,7 @@ exports.getAllPublicTreks = async (req, res) => {
             category,
         } = req.query;
 
-        const whereClause = { status: "published" };
+        const whereClause = { status: "active" };
 
         if (difficulty) whereClause.difficulty = difficulty;
         if (category) whereClause.category = category;
@@ -1155,41 +1158,52 @@ exports.getAllPublicTreks = async (req, res) => {
             offset: (parseInt(page) - 1) * parseInt(limit),
         });
 
-        const transformedTreks = treks.rows.map((trek) => ({
-            id: trek.id,
-            name: trek.title,
-            description: trek.description,
-            destination: trek.destinationData?.name || "",
-            duration: trek.duration,
-            durationDays: trek.duration_days,
-            durationNights: trek.duration_nights,
-            price: trek.base_price,
-            difficulty: trek.difficulty,
-            category: trek.category,
-            images: trek.images?.map((img) => `/storage/${img.url}`) || [],
-            trekStages:
-                trek.trek_stages?.map((stage) => ({
-                    id: stage.id,
-                    stage_name: stage.stage_name || stage.name || "",
-                    means_of_transport: stage.means_of_transport || "",
-                    date_time: stage.date_time || "",
-                })) || [],
-            rating: parseFloat(trek.rating) || 0.0,
-            hasDiscount: trek.has_discount || false,
-            discountValue: parseFloat(trek.discount_value) || 0.0,
-            discountType: trek.discount_type || "percentage",
-            discountText: generateDiscountText(
-                trek.has_discount,
-                trek.discount_value,
-                trek.discount_type
-            ),
-            vendor: {
-                id: trek.vendor.id,
-                name: trek.vendor.user?.name || "Unknown Vendor",
-                rating: 4.0, // Default rating since not stored in database
-            },
-            createdAt: trek.created_at,
-        }));
+        const transformedTreks = await Promise.all(
+            treks.rows.map(async (trek) => {
+                // Calculate rating for each trek
+                const trekRating = await calculateTrekRating(trek.id);
+
+                return {
+                    id: trek.id,
+                    name: trek.title,
+                    description: trek.description,
+                    destination: trek.destinationData?.name || "",
+                    duration: trek.duration,
+                    durationDays: trek.duration_days,
+                    durationNights: trek.duration_nights,
+                    price: trek.base_price,
+                    difficulty: trek.difficulty,
+                    category: trek.category,
+                    images:
+                        trek.images?.map((img) => `/storage/${img.url}`) || [],
+                    trekStages:
+                        trek.trek_stages?.map((stage) => ({
+                            id: stage.id,
+                            stage_name: stage.stage_name || stage.name || "",
+                            means_of_transport: stage.means_of_transport || "",
+                            date_time: stage.date_time || "",
+                        })) || [],
+                    // Rating details
+                    rating: trekRating.overall,
+                    ratingCount: trekRating.ratingCount,
+                    categoryRatings: trekRating.categories,
+                    hasDiscount: trek.has_discount || false,
+                    discountValue: parseFloat(trek.discount_value) || 0.0,
+                    discountType: trek.discount_type || "percentage",
+                    discountText: generateDiscountText(
+                        trek.has_discount,
+                        trek.discount_value,
+                        trek.discount_type
+                    ),
+                    vendor: {
+                        id: trek.vendor.id,
+                        name: trek.vendor.user?.name || "Unknown Vendor",
+                        rating: 4.0, // Default rating since not stored in database
+                    },
+                    createdAt: trek.created_at,
+                };
+            })
+        );
 
         res.json({
             success: true,
@@ -1219,7 +1233,7 @@ exports.getPublicTrekById = async (req, res) => {
         const trek = await Trek.findOne({
             where: {
                 id: id,
-                status: "published",
+                status: "active",
             },
             include: [
                 {
@@ -1286,6 +1300,32 @@ exports.getPublicTrekById = async (req, res) => {
                 message: "Trek not found",
             });
         }
+
+        // Calculate trek rating from ratings
+        const trekRating = await calculateTrekRating(trek.id);
+
+        // Get recent reviews for this trek
+        const recentReviews = await Review.findAll({
+            where: {
+                trek_id: trek.id,
+                status: "approved",
+            },
+            include: [
+                {
+                    model: Customer,
+                    as: "customer",
+                    attributes: ["id", "name"],
+                },
+            ],
+            order: [["created_at", "DESC"]],
+            limit: 5, // Get latest 5 reviews
+        });
+
+        // Get rating categories for reference
+        const ratingCategories = await RatingCategory.findAll({
+            where: { is_active: true },
+            order: [["sort_order", "ASC"]],
+        });
 
         const transformedTrek = {
             id: trek.id,
@@ -1355,11 +1395,15 @@ exports.getPublicTrekById = async (req, res) => {
                     endDate: batch.end_date,
                     capacity: batch.capacity,
                     bookedSlots: batch.booked_slots || 0,
-                    availableSlots: batch.capacity - (batch.booked_slots || 0),
+                    availableSlots:
+                        batch.available_slots ||
+                        batch.capacity - (batch.booked_slots || 0),
                 })) || [],
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
-            rating: parseFloat(trek.rating) || 0.0,
+            rating: trekRating.overall,
+            ratingCount: trekRating.ratingCount,
+            categoryRatings: trekRating.categories,
             hasDiscount: trek.has_discount || false,
             discountValue: parseFloat(trek.discount_value) || 0.0,
             discountType: trek.discount_type || "percentage",
@@ -1379,6 +1423,22 @@ exports.getPublicTrekById = async (req, res) => {
                 rating: 4.0, // Default rating since not stored in database
                 status: trek.vendor.status,
             },
+            // Rating and review details
+            reviews: recentReviews.map((review) => ({
+                id: review.id,
+                title: review.title,
+                content: review.content,
+                customerName: review.customer?.name || "Anonymous",
+                isVerified: review.is_verified,
+                isHelpful: review.is_helpful,
+                createdAt: review.created_at,
+            })),
+            ratingCategories: ratingCategories.map((category) => ({
+                id: category.id,
+                name: category.name,
+                description: category.description,
+                sortOrder: category.sort_order,
+            })),
             createdAt: trek.created_at,
             updatedAt: trek.updated_at,
         };
@@ -1405,7 +1465,7 @@ exports.getTreksByCategory = async (req, res) => {
         const treks = await Trek.findAndCountAll({
             where: {
                 category: categoryId,
-                status: "published",
+                status: "active",
             },
             include: [
                 {
@@ -1513,7 +1573,7 @@ exports.searchTreks = async (req, res) => {
             city_id,
         } = req.query;
 
-        const whereClause = { status: "published" };
+        const whereClause = { status: "active" };
 
         // Text search
         if (q) {
@@ -1615,64 +1675,99 @@ exports.searchTreks = async (req, res) => {
             });
         }
 
-        const transformedTreks = filteredTreks.map((trek) => ({
-            id: trek.id,
-            name: trek.title,
-            description: trek.description,
-            destination: trek.destinationData?.name || "",
-            destination_id: trek.destination_id,
-            city_id: trek.city_id,
-            city: trek.city?.cityName || "",
-            duration: trek.duration,
-            durationDays: trek.duration_days,
-            durationNights: trek.duration_nights,
-            price: trek.base_price,
-            difficulty: trek.difficulty,
-            trekType: trek.trek_type,
-            category: trek.category,
-            meetingPoint: trek.meeting_point,
-            meetingTime: trek.meeting_time,
-            status: trek.status,
-            images: trek.images?.map((img) => `/storage/${img.url}`) || [],
-            trekStages:
-                trek.trek_stages?.map((stage) => ({
-                    id: stage.id,
-                    stage_name: stage.stage_name || stage.name || "",
-                    means_of_transport: stage.means_of_transport || "",
-                    date_time: stage.date_time || "",
-                })) || [],
-            batches:
-                trek.batches?.map((batch) => ({
-                    id: batch.id,
-                    startDate: batch.start_date,
-                    endDate: batch.end_date,
-                    capacity: batch.capacity,
-                    bookedSlots: batch.booked_slots || 0,
-                    availableSlots: batch.capacity - (batch.booked_slots || 0),
-                })) || [],
-            rating: parseFloat(trek.rating) || 0.0,
-            hasDiscount: trek.has_discount || false,
-            discountValue: parseFloat(trek.discount_value) || 0.0,
-            discountType: trek.discount_type || "percentage",
-            discountText: generateDiscountText(
-                trek.has_discount,
-                trek.discount_value,
-                trek.discount_type
-            ),
-            cancellationPolicies: parseJsonField(trek.cancellation_policies),
-            otherPolicies: parseJsonField(trek.other_policies),
-            activities: parseJsonField(trek.activities),
-            vendor: {
-                id: trek.vendor.id,
-                name: trek.vendor.user?.name || "Unknown Vendor",
-                email: trek.vendor.user?.email || "",
-                phone: trek.vendor.user?.phone || "",
-                rating: 4.0, // Default rating since not stored in database
-                status: trek.vendor.status,
-            },
-            createdAt: trek.created_at,
-            updatedAt: trek.updated_at,
-        }));
+        const transformedTreks = await Promise.all(
+            filteredTreks.map(async (trek) => {
+                // Calculate rating for each trek
+                const trekRating = await calculateTrekRating(trek.id);
+
+                // Get batch information for the searched date
+                let batchInfo = null;
+                if (startDate) {
+                    const targetDate = new Date(startDate)
+                        .toISOString()
+                        .split("T")[0];
+                    const matchingBatch = trek.batches?.find((batch) => {
+                        const batchStartDate = batch.start_date;
+                        if (!batchStartDate) return false;
+                        const batchDate = new Date(batchStartDate)
+                            .toISOString()
+                            .split("T")[0];
+                        return batchDate === targetDate;
+                    });
+
+                    if (matchingBatch) {
+                        batchInfo = {
+                            startDate: matchingBatch.start_date,
+                            endDate: matchingBatch.end_date,
+                            capacity: matchingBatch.capacity,
+                            bookedSlots: matchingBatch.booked_slots || 0,
+                            availableSlots:
+                                matchingBatch.available_slots ||
+                                matchingBatch.capacity -
+                                    (matchingBatch.booked_slots || 0),
+                        };
+                    }
+                }
+
+                return {
+                    id: trek.id,
+                    name: trek.title,
+                    description: trek.description,
+                    destination: trek.destinationData?.name || "",
+                    destination_id: trek.destination_id,
+                    city_id: trek.city_id,
+                    city: trek.city?.cityName || "",
+                    duration: trek.duration,
+                    durationDays: trek.duration_days,
+                    durationNights: trek.duration_nights,
+                    price: trek.base_price,
+                    difficulty: trek.difficulty,
+                    trekType: trek.trek_type,
+                    category: trek.category,
+                    meetingPoint: trek.meeting_point,
+                    meetingTime: trek.meeting_time,
+                    status: trek.status,
+                    images:
+                        trek.images?.map((img) => `/storage/${img.url}`) || [],
+                    trekStages:
+                        trek.trek_stages?.map((stage) => ({
+                            id: stage.id,
+                            stage_name: stage.stage_name || stage.name || "",
+                            means_of_transport: stage.means_of_transport || "",
+                            date_time: stage.date_time || "",
+                        })) || [],
+                    // Include batch info for searched date instead of full batches array
+                    batchInfo,
+                    // Rating details
+                    rating: trekRating.overall,
+                    ratingCount: trekRating.ratingCount,
+                    categoryRatings: trekRating.categories,
+                    hasDiscount: trek.has_discount || false,
+                    discountValue: parseFloat(trek.discount_value) || 0.0,
+                    discountType: trek.discount_type || "percentage",
+                    discountText: generateDiscountText(
+                        trek.has_discount,
+                        trek.discount_value,
+                        trek.discount_type
+                    ),
+                    cancellationPolicies: parseJsonField(
+                        trek.cancellation_policies
+                    ),
+                    otherPolicies: parseJsonField(trek.other_policies),
+                    activities: parseJsonField(trek.activities),
+                    vendor: {
+                        id: trek.vendor.id,
+                        name: trek.vendor.user?.name || "Unknown Vendor",
+                        email: trek.vendor.user?.email || "",
+                        phone: trek.vendor.user?.phone || "",
+                        rating: 4.0, // Default rating since not stored in database
+                        status: trek.vendor.status,
+                    },
+                    createdAt: trek.created_at,
+                    updatedAt: trek.updated_at,
+                };
+            })
+        );
 
         // Update count for pagination when filtering by startDate
         const finalCount = startDate ? filteredTreks.length : treks.count;

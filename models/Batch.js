@@ -15,6 +15,18 @@ module.exports = (sequelize, DataTypes) => {
             start_date: { type: DataTypes.DATEONLY, allowNull: false },
             end_date: { type: DataTypes.DATEONLY, allowNull: false },
             capacity: { type: DataTypes.INTEGER, allowNull: false },
+            booked_slots: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Number of slots already booked for this batch",
+            },
+            available_slots: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+                comment: "Number of slots available for booking in this batch",
+            },
         },
         {
             tableName: "batches",
