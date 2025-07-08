@@ -11,7 +11,7 @@ const {
     Cancellation,
     sequelize,
     User,
-    BookingParticipant,
+    Traveler,
 } = require("../models");
 const { Op } = require("sequelize");
 const logger = require("../utils/logger");
@@ -104,18 +104,45 @@ const createBooking = async (req, res) => {
             special_requests: specialRequests,
         });
 
-        // Create participant records
-        const participantData = participants.map((participant) => ({
-            booking_id: booking.id,
-            name: participant.name,
-            age: participant.age,
-            gender: participant.gender,
-            phone: participant.phone,
-            emergency_contact: participant.emergencyContact,
-            medical_conditions: participant.medicalConditions || null,
-        }));
+        // Create or get travelers and link them to booking
+        const travelerIds = [];
 
-        await BookingParticipant.bulkCreate(participantData);
+        for (const participant of participants) {
+            // Check if traveler already exists for this customer
+            let traveler = await Traveler.findOne({
+                where: {
+                    customer_id: userId,
+                    name: participant.name,
+                    phone: participant.phone,
+                    is_active: true,
+                },
+            });
+
+            if (!traveler) {
+                // Create new traveler
+                traveler = await Traveler.create({
+                    customer_id: userId,
+                    name: participant.name,
+                    age: participant.age,
+                    gender: participant.gender,
+                    phone: participant.phone,
+                    emergency_contact_name: participant.name, // Default to same name
+                    emergency_contact_phone: participant.emergencyContact,
+                    emergency_contact_relation: "Self",
+                    medical_conditions: participant.medicalConditions || null,
+                });
+            }
+
+            // Link traveler to booking
+            await BookingTraveler.create({
+                booking_id: booking.id,
+                traveler_id: traveler.id,
+                is_primary: travelerIds.length === 0, // First traveler is primary
+                status: "confirmed",
+            });
+
+            travelerIds.push(traveler.id);
+        }
 
         // Fetch complete booking data
         const completeBooking = await Booking.findByPk(booking.id, {
@@ -155,7 +182,11 @@ const getUserBookings = async (req, res) => {
                 { model: Trek, as: "trek" },
                 { model: Customer, as: "customer" },
                 { model: PickupPoint, as: "pickupPoint" },
-                { model: BookingParticipant, as: "participants" },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
             ],
             order: [["created_at", "DESC"]],
             limit: parseInt(limit),
@@ -565,7 +596,11 @@ const getVendorBookings = async (req, res) => {
                 { model: Trek, as: "trek" },
                 { model: Customer, as: "customer" },
                 { model: PickupPoint, as: "pickupPoint" },
-                { model: BookingParticipant, as: "participants" },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
             ],
             order: [["created_at", "DESC"]],
             limit: parseInt(limit),
@@ -653,7 +688,7 @@ const createVendorBooking = async (req, res) => {
         const {
             customerId,
             trekId,
-            participants,
+            travelers,
             pickupPointId,
             specialRequests,
             status = "confirmed",
@@ -697,7 +732,7 @@ const createVendorBooking = async (req, res) => {
             },
         });
 
-        if (currentBookings + participants.length > trek.max_participants) {
+        if (currentBookings + travelers.length > trek.max_participants) {
             return res.status(400).json({
                 message: "Not enough slots available",
                 availableSlots: trek.max_participants - currentBookings,
@@ -705,7 +740,7 @@ const createVendorBooking = async (req, res) => {
         }
 
         // Calculate pricing
-        const participantCount = participants.length || 0;
+        const participantCount = travelers.length || 0;
         const totalAmount = trek.base_price * participantCount;
         const finalAmount = totalAmount; // No discount for vendor-created bookings
 
@@ -716,7 +751,7 @@ const createVendorBooking = async (req, res) => {
             participantCount,
             totalAmount,
             finalAmount,
-            participants,
+            travelers,
         });
 
         // Create booking
@@ -737,21 +772,49 @@ const createVendorBooking = async (req, res) => {
 
         console.log("Booking created successfully:", booking.id);
 
-        // Create participant records only if there are participants
-        if (participants && participants.length > 0) {
-            const participantData = participants.map((participant) => ({
-                booking_id: booking.id,
-                name: participant.name,
-                age: participant.age,
-                gender: participant.gender,
-                phone: participant.phone,
-                emergency_contact: participant.emergencyContact,
-                medical_conditions: participant.medicalConditions || null,
-            }));
+        // Create or get travelers and link them to booking
+        if (travelers && travelers.length > 0) {
+            for (const traveler of travelers) {
+                // Check if traveler already exists for this customer
+                let existingTraveler = await Traveler.findOne({
+                    where: {
+                        customer_id: customerId,
+                        name: traveler.name,
+                        phone: traveler.phone,
+                        is_active: true,
+                    },
+                });
 
-            console.log("Creating participants:", participantData);
-            await BookingParticipant.bulkCreate(participantData);
-            console.log("Participants created successfully");
+                if (!existingTraveler) {
+                    // Create new traveler
+                    existingTraveler = await Traveler.create({
+                        customer_id: customerId,
+                        name: traveler.name,
+                        age: traveler.age,
+                        gender: traveler.gender,
+                        phone: traveler.phone,
+                        email: traveler.email || null,
+                        emergency_contact_name:
+                            traveler.emergency_contact_name || traveler.name,
+                        emergency_contact_phone:
+                            traveler.emergency_contact_phone,
+                        emergency_contact_relation:
+                            traveler.emergency_contact_relation || "Self",
+                        medical_conditions: traveler.medical_conditions || null,
+                        dietary_restrictions:
+                            traveler.dietary_restrictions || null,
+                    });
+                }
+
+                // Link traveler to booking
+                await BookingTraveler.create({
+                    booking_id: booking.id,
+                    traveler_id: existingTraveler.id,
+                    is_primary: false, // Vendor bookings don't have primary traveler concept
+                    status: "confirmed",
+                });
+            }
+            console.log("Travelers linked to booking successfully");
         }
 
         // Fetch complete booking data
@@ -761,7 +824,11 @@ const createVendorBooking = async (req, res) => {
                 { model: Customer, as: "customer" },
                 { model: Vendor, as: "vendor" },
                 { model: PickupPoint, as: "pickupPoint" },
-                { model: BookingParticipant, as: "participants" },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
             ],
         });
 
@@ -780,7 +847,7 @@ const createVendorBooking = async (req, res) => {
     }
 };
 
-// Vendor: Get booking participants
+// Vendor: Get booking travelers
 const getBookingParticipants = async (req, res) => {
     try {
         const { id } = req.params;
@@ -793,7 +860,11 @@ const getBookingParticipants = async (req, res) => {
             },
             include: [
                 { model: Trek, as: "trek" },
-                { model: BookingParticipant, as: "participants" },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
             ],
         });
 
@@ -801,14 +872,28 @@ const getBookingParticipants = async (req, res) => {
             return res.status(404).json({ message: "Booking not found" });
         }
 
+        // Transform travelers data to match expected format
+        const travelers = booking.travelers.map((bt) => ({
+            id: bt.traveler.id,
+            name: bt.traveler.name,
+            age: bt.traveler.age,
+            gender: bt.traveler.gender,
+            phone: bt.traveler.phone,
+            emergency_contact: bt.traveler.emergency_contact_phone,
+            medical_conditions: bt.traveler.medical_conditions,
+            is_primary: bt.is_primary,
+            status: bt.status,
+        }));
+
         res.json({
             bookingId: booking.id,
             trek: booking.trek,
-            participants: booking.participants,
+            participants: travelers, // Keep backward compatibility
+            travelers: travelers, // New format
         });
     } catch (error) {
-        console.error("Error fetching booking participants:", error);
-        res.status(500).json({ message: "Failed to fetch participants" });
+        console.error("Error fetching booking travelers:", error);
+        res.status(500).json({ message: "Failed to fetch travelers" });
     }
 };
 
@@ -828,7 +913,11 @@ const getAllBookings = async (req, res) => {
                 { model: Trek, as: "trek" },
                 { model: Customer, as: "customer" },
                 { model: Vendor, as: "vendor" },
-                { model: BookingParticipant, as: "participants" },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
             ],
             order: [["created_at", "DESC"]],
             limit: parseInt(limit),

@@ -128,10 +128,7 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: "booking_id",
             as: "travelers",
         });
-        Booking.hasMany(models.BookingParticipant, {
-            foreignKey: "booking_id",
-            as: "participants",
-        });
+        // Removed BookingParticipant association - using only travelers now
         Booking.hasMany(models.PaymentLog, {
             foreignKey: "booking_id",
             as: "payments",

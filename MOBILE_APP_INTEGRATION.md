@@ -828,20 +828,39 @@ http://localhost:5000/api/v1
 
 ```json
 {
-    "trekId": 15,
-    "participants": [
+    "trek_id": 15,
+    "batch_id": 1,
+    "pickup_point_id": 1,
+    "coupon_id": 1,
+    "travelers": [
         {
+            "id": 1,
             "name": "John Doe",
             "age": 30,
             "gender": "male",
             "phone": "+919876543210",
-            "emergencyContact": "+919876543211"
+            "email": "john@example.com",
+            "emergency_contact_name": "Jane Doe",
+            "emergency_contact_phone": "+919876543211",
+            "emergency_contact_relation": "Spouse",
+            "medical_conditions": "None",
+            "dietary_restrictions": "Vegetarian",
+            "is_primary": true,
+            "special_requirements": "None",
+            "accommodation_preference": "shared",
+            "meal_preference": "veg"
         }
     ],
-    "pickupPointId": 1,
-    "couponCode": "WELCOME10"
+    "special_requests": "Early morning pickup preferred"
 }
 ```
+
+**Note**:
+
+-   Use existing traveler `id` if the traveler already exists in the customer's profile
+-   Omit `id` to create a new traveler
+-   At least one traveler must be marked as `is_primary: true`
+-   If no primary traveler is specified, the first traveler becomes primary
 
 **Response**:
 
@@ -853,21 +872,28 @@ http://localhost:5000/api/v1
         "booking": {
             "id": 1,
             "bookingNumber": "BK20250115001",
-            "trekId": 15,
+            "trek_id": 15,
             "trekName": "Valley of Flowers Trek",
-            "customerId": 1,
+            "customer_id": 1,
             "totalAmount": 15999.0,
             "discountAmount": 1599.9,
             "finalAmount": 14399.1,
             "status": "pending",
-            "participants": [
+            "travelers": [
                 {
                     "id": 1,
                     "name": "John Doe",
                     "age": 30,
                     "gender": "male",
                     "phone": "+919876543210",
-                    "emergencyContact": "+919876543211"
+                    "email": "john@example.com",
+                    "emergency_contact_name": "Jane Doe",
+                    "emergency_contact_phone": "+919876543211",
+                    "emergency_contact_relation": "Spouse",
+                    "medical_conditions": "None",
+                    "dietary_restrictions": "Vegetarian",
+                    "is_primary": true,
+                    "status": "confirmed"
                 }
             ],
             "createdAt": "2025-01-15T10:30:00.000Z"
@@ -899,12 +925,13 @@ http://localhost:5000/api/v1
             "totalAmount": 15999.0,
             "finalAmount": 14399.1,
             "status": "confirmed",
-            "participants": [
+            "travelers": [
                 {
                     "id": 1,
                     "name": "John Doe",
                     "age": 30,
-                    "gender": "male"
+                    "gender": "male",
+                    "is_primary": true
                 }
             ],
             "createdAt": "2025-01-15T10:30:00.000Z"
@@ -938,14 +965,21 @@ http://localhost:5000/api/v1
         "discountAmount": 1599.9,
         "finalAmount": 14399.1,
         "status": "confirmed",
-        "participants": [
+        "travelers": [
             {
                 "id": 1,
                 "name": "John Doe",
                 "age": 30,
                 "gender": "male",
                 "phone": "+919876543210",
-                "emergencyContact": "+919876543211"
+                "email": "john@example.com",
+                "emergency_contact_name": "Jane Doe",
+                "emergency_contact_phone": "+919876543211",
+                "emergency_contact_relation": "Spouse",
+                "medical_conditions": "None",
+                "dietary_restrictions": "Vegetarian",
+                "is_primary": true,
+                "status": "confirmed"
             }
         ],
         "vendor": {
