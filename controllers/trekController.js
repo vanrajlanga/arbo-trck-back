@@ -375,8 +375,8 @@ exports.getTrekById = async (req, res) => {
         trek.dataValues.ratingCount = trekRating.ratingCount;
         trek.dataValues.categoryRatings = trekRating.categories;
 
-        // Get individual customer ratings and reviews
-        const customerRatingsAndReviews = await Rating.findAll({
+        // Get individual customer ratings
+        const customerRatings = await Rating.findAll({
             where: { trek_id: trek.id },
             include: [
                 {
@@ -388,38 +388,101 @@ exports.getTrekById = async (req, res) => {
                     as: "customer",
                     attributes: ["id", "name", "email"],
                 },
-                {
-                    model: Review,
-                    as: "review",
-                    required: false,
-                },
             ],
             order: [["created_at", "DESC"]],
         });
 
-        // Transform customer ratings and reviews
-        const customerRatingAndReview = customerRatingsAndReviews.map(
-            (rating) => ({
-                id: rating.id,
-                customer: {
-                    id: rating.customer?.id,
-                    name: rating.customer?.name || "Anonymous",
-                    email: rating.customer?.email,
+        // Get all reviews for this trek
+        const allReviews = await Review.findAll({
+            where: { trek_id: trek.id, status: "approved" },
+            include: [
+                {
+                    model: Customer,
+                    as: "customer",
+                    attributes: ["id", "name", "email"],
                 },
+            ],
+        });
+
+        // Group ratings by customer and attach reviews
+        const customerRatingsMap = new Map();
+
+        customerRatings.forEach((rating) => {
+            const customerId = rating.customer?.id || "anonymous";
+            const customerName = rating.customer?.name || "Anonymous";
+            const customerEmail = rating.customer?.email;
+
+            if (!customerRatingsMap.has(customerId)) {
+                customerRatingsMap.set(customerId, {
+                    customer: {
+                        id: customerId,
+                        name: customerName,
+                        email: customerEmail,
+                    },
+                    ratings: [],
+                    reviews: [],
+                    categoryRatings: {},
+                });
+            }
+
+            const customerData = customerRatingsMap.get(customerId);
+            customerData.ratings.push({
+                id: rating.id,
                 category: rating.category?.name || "Overall",
                 rating: parseFloat(rating.rating_value),
-                review: rating.review
-                    ? {
-                          id: rating.review.id,
-                          title: rating.review.title,
-                          content: rating.review.content,
-                          rating: parseFloat(rating.review.rating),
-                          createdAt: rating.review.created_at,
-                      }
-                    : null,
                 createdAt: rating.created_at,
-            })
-        );
+            });
+
+            // Add category rating
+            if (rating.category?.name) {
+                customerData.categoryRatings[rating.category.name] = parseFloat(
+                    rating.rating_value
+                );
+            }
+        });
+
+        // Attach reviews to each customer
+        allReviews.forEach((review) => {
+            const customerId = review.customer?.id || "anonymous";
+            if (customerRatingsMap.has(customerId)) {
+                customerRatingsMap.get(customerId).reviews.push({
+                    id: review.id,
+                    title: review.title,
+                    content: review.content,
+                    createdAt: review.created_at,
+                });
+            }
+        });
+
+        // Transform to final format
+        const customerRatingAndReview = Array.from(
+            customerRatingsMap.values()
+        ).map((customerData) => {
+            // Calculate overall rating from category ratings
+            const categoryValues = Object.values(customerData.categoryRatings);
+            const overallRating =
+                categoryValues.length > 0
+                    ? parseFloat(
+                          (
+                              categoryValues.reduce(
+                                  (sum, rating) => sum + rating,
+                                  0
+                              ) / categoryValues.length
+                          ).toFixed(2)
+                      )
+                    : 0;
+
+            return {
+                customer: customerData.customer,
+                rating: overallRating, // Overall rating for this customer
+                categoryRatings: customerData.categoryRatings, // Individual category ratings
+                reviews: customerData.reviews, // All reviews by this customer
+                createdAt:
+                    customerData.ratings.length > 0
+                        ? customerData.ratings[0].createdAt
+                        : new Date(),
+            };
+        });
 
         // Transform data to match frontend format
         const transformedTrek = {
