@@ -66,6 +66,16 @@ const getVendorCustomers = async (req, res) => {
                         },
                     ],
                 },
+                {
+                    model: require("../models").City,
+                    as: "city",
+                    attributes: ["id", "cityName"],
+                },
+                {
+                    model: require("../models").State,
+                    as: "state",
+                    attributes: ["id", "name"],
+                },
             ],
             // attributes: ["id", "name", "email", "phone", "created_at"],
             distinct: true, // Use distinct instead of group
@@ -115,7 +125,28 @@ const getVendorCustomers = async (req, res) => {
                     name: customer.name,
                     email: customer.email,
                     phone: customer.phone,
-                    location: "N/A", // Can be enhanced with address data
+                    city_id: customer.city_id,
+                    state_id: customer.state_id,
+                    city: customer.city
+                        ? {
+                              id: customer.city.id,
+                              name: customer.city.cityName,
+                          }
+                        : null,
+                    state: customer.state
+                        ? {
+                              id: customer.state.id,
+                              name: customer.state.name,
+                          }
+                        : null,
+                    location:
+                        customer.city && customer.state
+                            ? `${customer.city.cityName}, ${customer.state.name}`
+                            : customer.city
+                            ? customer.city.cityName
+                            : customer.state
+                            ? customer.state.name
+                            : "N/A",
                     tripsBooked: totalBookings,
                     lastBooking: lastBooking
                         ? new Date(lastBooking).toLocaleDateString("en-US")
@@ -214,6 +245,16 @@ const getCustomerById = async (req, res) => {
                     ],
                     order: [["createdAt", "DESC"]],
                 },
+                {
+                    model: require("../models").City,
+                    as: "city",
+                    attributes: ["id", "cityName"],
+                },
+                {
+                    model: require("../models").State,
+                    as: "state",
+                    attributes: ["id", "name"],
+                },
             ],
         });
 
@@ -241,6 +282,20 @@ const getCustomerById = async (req, res) => {
             name: customer.name,
             email: customer.email,
             phone: customer.phone,
+            city_id: customer.city_id,
+            state_id: customer.state_id,
+            city: customer.city
+                ? {
+                      id: customer.city.id,
+                      name: customer.city.cityName,
+                  }
+                : null,
+            state: customer.state
+                ? {
+                      id: customer.state.id,
+                      name: customer.state.name,
+                  }
+                : null,
             joinedDate: customer.createdAt
                 ? new Date(customer.createdAt).toLocaleDateString("en-US")
                 : "N/A",

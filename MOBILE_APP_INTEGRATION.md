@@ -77,7 +77,9 @@ http://localhost:5000/api/v1
     "lastName": "Doe",
     "email": "john@example.com",
     "dateOfBirth": "1990-01-01",
-    "emergencyContact": "+919876543211"
+    "emergencyContact": "+919876543211",
+    "city_id": 1,
+    "state_id": 1
 }
 ```
 
@@ -121,6 +123,16 @@ http://localhost:5000/api/v1
             "dateOfBirth": "1990-01-01",
             "emergencyContact": "+919876543211",
             "profileCompleted": true,
+            "city_id": 1,
+            "state_id": 1,
+            "city": {
+                "id": 1,
+                "name": "Dehradun"
+            },
+            "state": {
+                "id": 1,
+                "name": "Uttarakhand"
+            },
             "travelers": [
                 {
                     "id": 1,
@@ -146,7 +158,172 @@ http://localhost:5000/api/v1
 
 ---
 
-## 2. Trek APIs
+## 2. Location APIs
+
+### 2.1 Get All States
+
+**Endpoint**: `GET /states`
+
+**Description**: Get all states with optional filtering
+
+**Query Parameters**:
+
+-   `status` (optional): Filter by status (active, inactive)
+-   `isPopular` (optional): Filter popular states (true, false)
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Uttarakhand",
+            "status": "active",
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
+        },
+        {
+            "id": 2,
+            "name": "Himachal Pradesh",
+            "status": "active",
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
+        }
+    ]
+}
+```
+
+### 2.2 Get State by ID
+
+**Endpoint**: `GET /states/:id`
+
+**Description**: Get specific state details
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "name": "Uttarakhand",
+        "status": "active",
+        "created_at": "2025-01-15T10:30:00.000Z",
+        "updated_at": "2025-01-15T10:30:00.000Z"
+    }
+}
+```
+
+### 2.3 Get Popular States
+
+**Endpoint**: `GET /states/popular`
+
+**Description**: Get all popular states
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Uttarakhand",
+            "status": "active",
+            "is_popular": true,
+            "cities": [
+                {
+                    "id": 1,
+                    "name": "Dehradun",
+                    "status": "active",
+                    "is_popular": true
+                }
+            ],
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
+        }
+    ]
+}
+```
+
+### 2.4 Get Cities
+
+**Endpoint**: `GET /cities`
+
+**Description**: Get all cities with optional filtering
+
+**Query Parameters**:
+
+-   `search` (optional): Search cities by name
+-   `stateId` (optional): Filter cities by state ID
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "cities": [
+            {
+                "id": 1,
+                "cityName": "Dehradun",
+                "isPopular": true,
+                "stateId": 1,
+                "state": {
+                    "id": 1,
+                    "name": "Uttarakhand"
+                },
+                "created_at": "2025-01-15T10:30:00.000Z",
+                "updated_at": "2025-01-15T10:30:00.000Z"
+            },
+            {
+                "id": 2,
+                "cityName": "Shimla",
+                "isPopular": true,
+                "stateId": 2,
+                "state": {
+                    "id": 2,
+                    "name": "Himachal Pradesh"
+                },
+                "created_at": "2025-01-15T10:30:00.000Z",
+                "updated_at": "2025-01-15T10:30:00.000Z"
+            }
+        ]
+    }
+}
+```
+
+### 2.5 Get City by ID
+
+**Endpoint**: `GET /cities/:id`
+
+**Description**: Get specific city details
+
+**Response**:
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "cityName": "Dehradun",
+        "isPopular": true,
+        "stateId": 1,
+        "state": {
+            "id": 1,
+            "name": "Uttarakhand"
+        },
+        "created_at": "2025-01-15T10:30:00.000Z",
+        "updated_at": "2025-01-15T10:30:00.000Z"
+    }
+}
+```
+
+---
+
+## 3. Trek APIs
 
 ### 2.1 Get All Public Treks
 

@@ -53,6 +53,22 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM("active", "inactive"),
                 defaultValue: "active",
             },
+            city_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "cities",
+                    key: "id",
+                },
+            },
+            state_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: "states",
+                    key: "id",
+                },
+            },
         },
         {
             tableName: "customers",
@@ -68,6 +84,14 @@ module.exports = (sequelize, DataTypes) => {
         Customer.hasMany(models.Traveler, {
             foreignKey: "customer_id",
             as: "travelers",
+        });
+        Customer.belongsTo(models.City, {
+            foreignKey: "city_id",
+            as: "city",
+        });
+        Customer.belongsTo(models.State, {
+            foreignKey: "state_id",
+            as: "state",
         });
     };
 

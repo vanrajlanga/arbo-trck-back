@@ -8,6 +8,7 @@ const vendorRoutes = require("./vendorRoutes");
 const trekRoutes = require("./trekRoutes");
 const locationRoutes = require("./locationRoutes");
 const stateRoutes = require("./stateRoutes");
+const cityRoutes = require("./cityRoutes");
 const bookingRoutes = require("./bookingRoutes");
 const customerRoutes = require("./customerRoutes");
 const destinationRoutes = require("./destinationRoutes");
@@ -26,6 +27,7 @@ router.use("/vendors", vendorRoutes);
 router.use("/treks", trekRoutes);
 router.use("/locations", locationRoutes);
 router.use("/states", stateRoutes);
+router.use("/cities", cityRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/customers", customerRoutes);
 router.use("/destinations", destinationRoutes);
@@ -51,6 +53,8 @@ router.get("/", (req, res) => {
             travelers: "/api/v1/customer/travelers",
             public_treks: "/api/v1/treks",
             locations: "/api/v1/locations",
+            states: "/api/v1/states",
+            cities: "/api/v1/cities",
             destinations: "/api/v1/destinations",
             coupons: "/api/v1/coupons",
             reviews: "/api/v1/reviews",

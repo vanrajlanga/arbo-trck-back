@@ -105,6 +105,8 @@ const updateProfile = async (req, res) => {
             email,
             dateOfBirth,
             emergencyContact,
+            city_id,
+            state_id,
         } = req.body;
         const customerId = req.customer.id;
 
@@ -120,6 +122,8 @@ const updateProfile = async (req, res) => {
         if (email) updateData.email = email;
         if (dateOfBirth) updateData.date_of_birth = dateOfBirth;
         if (emergencyContact) updateData.emergency_contact = emergencyContact;
+        if (city_id) updateData.city_id = city_id;
+        if (state_id) updateData.state_id = state_id;
 
         updateData.profile_completed = true;
 
@@ -170,6 +174,16 @@ const getProfile = async (req, res) => {
                     where: { is_active: true },
                     required: false,
                 },
+                {
+                    model: require("../models").City,
+                    as: "city",
+                    attributes: ["id", "cityName"],
+                },
+                {
+                    model: require("../models").State,
+                    as: "state",
+                    attributes: ["id", "name"],
+                },
             ],
         });
 
@@ -191,6 +205,20 @@ const getProfile = async (req, res) => {
                     dateOfBirth: customer.date_of_birth,
                     emergencyContact: customer.emergency_contact,
                     profileCompleted: customer.profile_completed,
+                    city_id: customer.city_id,
+                    state_id: customer.state_id,
+                    city: customer.city
+                        ? {
+                              id: customer.city.id,
+                              name: customer.city.cityName,
+                          }
+                        : null,
+                    state: customer.state
+                        ? {
+                              id: customer.state.id,
+                              name: customer.state.name,
+                          }
+                        : null,
                     travelers: customer.travelers,
                 },
             },

@@ -387,6 +387,18 @@ exports.getTrekById = async (req, res) => {
                     model: Customer,
                     as: "customer",
                     attributes: ["id", "name", "email"],
+                    include: [
+                        {
+                            model: require("../models").City,
+                            as: "city",
+                            attributes: ["id", "cityName"],
+                        },
+                        {
+                            model: require("../models").State,
+                            as: "state",
+                            attributes: ["id", "name"],
+                        },
+                    ],
                 },
             ],
             order: [["created_at", "DESC"]],
@@ -400,6 +412,18 @@ exports.getTrekById = async (req, res) => {
                     model: Customer,
                     as: "customer",
                     attributes: ["id", "name", "email"],
+                    include: [
+                        {
+                            model: require("../models").City,
+                            as: "city",
+                            attributes: ["id", "cityName"],
+                        },
+                        {
+                            model: require("../models").State,
+                            as: "state",
+                            attributes: ["id", "name"],
+                        },
+                    ],
                 },
             ],
         });
@@ -418,6 +442,20 @@ exports.getTrekById = async (req, res) => {
                         id: customerId,
                         name: customerName,
                         email: customerEmail,
+                        city_id: rating.customer?.city_id,
+                        state_id: rating.customer?.state_id,
+                        city: rating.customer?.city
+                            ? {
+                                  id: rating.customer.city.id,
+                                  name: rating.customer.city.cityName,
+                              }
+                            : null,
+                        state: rating.customer?.state
+                            ? {
+                                  id: rating.customer.state.id,
+                                  name: rating.customer.state.name,
+                              }
+                            : null,
                     },
                     ratings: [],
                     reviews: [],
@@ -1478,6 +1516,18 @@ exports.getPublicTrekById = async (req, res) => {
                     model: Customer,
                     as: "customer",
                     attributes: ["id", "name", "email"],
+                    include: [
+                        {
+                            model: require("../models").City,
+                            as: "city",
+                            attributes: ["id", "cityName"],
+                        },
+                        {
+                            model: require("../models").State,
+                            as: "state",
+                            attributes: ["id", "name"],
+                        },
+                    ],
                 },
             ],
             order: [["created_at", "DESC"]],
@@ -1491,6 +1541,18 @@ exports.getPublicTrekById = async (req, res) => {
                     model: Customer,
                     as: "customer",
                     attributes: ["id", "name", "email"],
+                    include: [
+                        {
+                            model: require("../models").City,
+                            as: "city",
+                            attributes: ["id", "cityName"],
+                        },
+                        {
+                            model: require("../models").State,
+                            as: "state",
+                            attributes: ["id", "name"],
+                        },
+                    ],
                 },
             ],
         });
@@ -1509,6 +1571,20 @@ exports.getPublicTrekById = async (req, res) => {
                         id: customerId,
                         name: customerName,
                         email: customerEmail,
+                        city_id: rating.customer?.city_id,
+                        state_id: rating.customer?.state_id,
+                        city: rating.customer?.city
+                            ? {
+                                  id: rating.customer.city.id,
+                                  name: rating.customer.city.cityName,
+                              }
+                            : null,
+                        state: rating.customer?.state
+                            ? {
+                                  id: rating.customer.state.id,
+                                  name: rating.customer.state.name,
+                              }
+                            : null,
                     },
                     ratings: [],
                     reviews: [],
