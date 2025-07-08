@@ -1354,6 +1354,7 @@ exports.getPublicTrekById = async (req, res) => {
 
             if (matchingBatch) {
                 batchInfo = {
+                    id: matchingBatch.id,
                     startDate: matchingBatch.start_date,
                     endDate: matchingBatch.end_date,
                     capacity: matchingBatch.capacity,
@@ -1432,7 +1433,7 @@ exports.getPublicTrekById = async (req, res) => {
                     means_of_transport: stage.means_of_transport || "",
                     date_time: stage.date_time || "",
                 })) || [],
-            batchInfo: startDate ? batchInfo : null,
+            batchInfo: batchInfo ? batchInfo : null,
             inclusions: parseJsonField(trek.inclusions),
             exclusions: parseJsonField(trek.exclusions),
             rating: trekRating.overall,
@@ -1721,6 +1722,7 @@ exports.searchTreks = async (req, res) => {
 
                     if (matchingBatch) {
                         batchInfo = {
+                            id: matchingBatch.id,
                             startDate: matchingBatch.start_date,
                             endDate: matchingBatch.end_date,
                             capacity: matchingBatch.capacity,
