@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             emergency_contact_phone: {
                 type: DataTypes.STRING(20),
-                allowNull: false,
+                allowNull: true,
             },
             emergency_contact_relation: {
                 type: DataTypes.STRING(50),

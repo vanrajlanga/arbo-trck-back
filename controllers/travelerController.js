@@ -50,17 +50,10 @@ const createTraveler = async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        if (
-            !name ||
-            !age ||
-            !gender ||
-            !emergency_contact_name ||
-            !emergency_contact_phone
-        ) {
+        if (!name || !age || !gender) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Name, age, gender, and emergency contact details are required",
+                message: "Name, age and gender are required",
             });
         }
 
