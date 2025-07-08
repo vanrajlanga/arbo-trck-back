@@ -127,7 +127,16 @@ http://localhost:5000/api/v1
                     "name": "John Doe",
                     "age": 30,
                     "gender": "male",
-                    "phone": "+919876543210"
+                    "phone": "+919876543210",
+                    "emergency_contact_name": "Jane Doe",
+                    "emergency_contact_phone": "+919876543211",
+                    "emergency_contact_relation": "Spouse",
+                    "medical_conditions": "None",
+                    "dietary_restrictions": "Vegetarian",
+                    "id_proof_type": "Aadhar",
+                    "id_proof_number": "123456789012",
+                    "is_active": true,
+                    "created_at": "2025-01-15T10:30:00.000Z"
                 }
             ]
         }
@@ -977,11 +986,15 @@ http://localhost:5000/api/v1
 
 ## 8. Traveler Management APIs
 
-### 8.1 Get Travelers
+### 8.1 Get All Travelers
 
 **Endpoint**: `GET /customer/travelers`
 
 **Headers**: `Authorization: Bearer <jwt_token>`
+
+**Query Parameters**:
+
+-   `active_only` (optional): Filter active travelers only (default: true)
 
 **Response**:
 
@@ -995,9 +1008,17 @@ http://localhost:5000/api/v1
             "age": 30,
             "gender": "male",
             "phone": "+919876543210",
-            "emergencyContact": "+919876543211",
-            "isActive": true,
-            "createdAt": "2025-01-15T10:30:00.000Z"
+            "email": "john@example.com",
+            "emergency_contact_name": "Jane Doe",
+            "emergency_contact_phone": "+919876543211",
+            "emergency_contact_relation": "Spouse",
+            "medical_conditions": "None",
+            "dietary_restrictions": "Vegetarian",
+            "id_proof_type": "Aadhar",
+            "id_proof_number": "123456789012",
+            "is_active": true,
+            "created_at": "2025-01-15T10:30:00.000Z",
+            "updated_at": "2025-01-15T10:30:00.000Z"
         }
     ]
 }
@@ -1017,9 +1038,18 @@ http://localhost:5000/api/v1
     "age": 28,
     "gender": "female",
     "phone": "+919876543212",
-    "emergencyContact": "+919876543213"
+    "email": "jane@example.com",
+    "emergency_contact_name": "John Doe",
+    "emergency_contact_phone": "+919876543213",
+    "emergency_contact_relation": "Spouse",
+    "medical_conditions": "None",
+    "dietary_restrictions": "Vegetarian",
+    "id_proof_type": "Aadhar",
+    "id_proof_number": "987654321098"
 }
 ```
+
+**Required Fields**: `name`, `age`, `gender`, `emergency_contact_name`, `emergency_contact_phone`
 
 **Response**:
 
@@ -1028,16 +1058,22 @@ http://localhost:5000/api/v1
     "success": true,
     "message": "Traveler created successfully",
     "data": {
-        "traveler": {
-            "id": 2,
-            "name": "Jane Doe",
-            "age": 28,
-            "gender": "female",
-            "phone": "+919876543212",
-            "emergencyContact": "+919876543213",
-            "isActive": true,
-            "createdAt": "2025-01-15T10:30:00.000Z"
-        }
+        "id": 2,
+        "name": "Jane Doe",
+        "age": 28,
+        "gender": "female",
+        "phone": "+919876543212",
+        "email": "jane@example.com",
+        "emergency_contact_name": "John Doe",
+        "emergency_contact_phone": "+919876543213",
+        "emergency_contact_relation": "Spouse",
+        "medical_conditions": "None",
+        "dietary_restrictions": "Vegetarian",
+        "id_proof_type": "Aadhar",
+        "id_proof_number": "987654321098",
+        "is_active": true,
+        "created_at": "2025-01-15T10:30:00.000Z",
+        "updated_at": "2025-01-15T10:30:00.000Z"
     }
 }
 ```
@@ -1059,9 +1095,28 @@ http://localhost:5000/api/v1
         "age": 30,
         "gender": "male",
         "phone": "+919876543210",
-        "emergencyContact": "+919876543211",
-        "isActive": true,
-        "createdAt": "2025-01-15T10:30:00.000Z"
+        "email": "john@example.com",
+        "emergency_contact_name": "Jane Doe",
+        "emergency_contact_phone": "+919876543211",
+        "emergency_contact_relation": "Spouse",
+        "medical_conditions": "None",
+        "dietary_restrictions": "Vegetarian",
+        "id_proof_type": "Aadhar",
+        "id_proof_number": "123456789012",
+        "is_active": true,
+        "created_at": "2025-01-15T10:30:00.000Z",
+        "updated_at": "2025-01-15T10:30:00.000Z",
+        "bookingTravelers": [
+            {
+                "id": 1,
+                "booking": {
+                    "id": 1,
+                    "status": "confirmed",
+                    "booking_date": "2025-01-15T10:30:00.000Z",
+                    "final_amount": 15999.0
+                }
+            }
+        ]
     }
 }
 ```
@@ -1078,9 +1133,18 @@ http://localhost:5000/api/v1
 {
     "name": "John Smith",
     "age": 31,
-    "emergencyContact": "+919876543214"
+    "email": "johnsmith@example.com",
+    "emergency_contact_name": "Jane Smith",
+    "emergency_contact_phone": "+919876543214",
+    "emergency_contact_relation": "Spouse",
+    "medical_conditions": "None",
+    "dietary_restrictions": "Vegetarian",
+    "id_proof_type": "Aadhar",
+    "id_proof_number": "123456789012"
 }
 ```
+
+**Note**: Name, age, and gender cannot be updated if the traveler has active bookings.
 
 **Response**:
 
@@ -1089,16 +1153,21 @@ http://localhost:5000/api/v1
     "success": true,
     "message": "Traveler updated successfully",
     "data": {
-        "traveler": {
-            "id": 1,
-            "name": "John Smith",
-            "age": 31,
-            "gender": "male",
-            "phone": "+919876543210",
-            "emergencyContact": "+919876543214",
-            "isActive": true,
-            "updatedAt": "2025-01-15T11:30:00.000Z"
-        }
+        "id": 1,
+        "name": "John Smith",
+        "age": 31,
+        "gender": "male",
+        "phone": "+919876543210",
+        "email": "johnsmith@example.com",
+        "emergency_contact_name": "Jane Smith",
+        "emergency_contact_phone": "+919876543214",
+        "emergency_contact_relation": "Spouse",
+        "medical_conditions": "None",
+        "dietary_restrictions": "Vegetarian",
+        "id_proof_type": "Aadhar",
+        "id_proof_number": "123456789012",
+        "is_active": true,
+        "updated_at": "2025-01-15T11:30:00.000Z"
     }
 }
 ```
@@ -1108,6 +1177,8 @@ http://localhost:5000/api/v1
 **Endpoint**: `DELETE /customer/travelers/:id`
 
 **Headers**: `Authorization: Bearer <jwt_token>`
+
+**Note**: Travelers with active bookings cannot be deleted. They will be soft-deleted (marked as inactive).
 
 **Response**:
 
@@ -1134,10 +1205,18 @@ http://localhost:5000/api/v1
             "id": 1,
             "bookingNumber": "BK20250115001",
             "trekName": "Valley of Flowers Trek",
+            "trekImage": "/storage/trek_1_image1.jpg",
             "startDate": "2025-08-15",
             "endDate": "2025-08-20",
             "status": "confirmed",
-            "createdAt": "2025-01-15T10:30:00.000Z"
+            "finalAmount": 15999.0,
+            "bookingDate": "2025-01-15T10:30:00.000Z",
+            "vendor": {
+                "id": 1,
+                "name": "Himalayan Adventures",
+                "phone": "+919876543210",
+                "email": "info@himalayanadventures.com"
+            }
         }
     ]
 }
