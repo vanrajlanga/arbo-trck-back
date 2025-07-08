@@ -16,10 +16,6 @@ router.get("/:id/bookings", (req, res) => {
     });
 });
 
-router.get("/:id/travelers", (req, res) => {
-    res.json({
-        message: "Get vendor customer travelers endpoint - to be implemented",
-    });
-});
+router.get("/:id/travelers", customerController.getCustomerTravelers);
 
 module.exports = router;

@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             emergency_contact_name: {
                 type: DataTypes.STRING(100),
-                allowNull: false,
+                allowNull: true,
             },
             emergency_contact_phone: {
                 type: DataTypes.STRING(20),

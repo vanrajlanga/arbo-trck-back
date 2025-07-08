@@ -601,6 +601,300 @@ const debugListCustomers = async (req, res) => {
     }
 };
 
+// Mobile App: Get customer profile (optimized for mobile)
+const getMobileCustomerProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const customer = await Customer.findOne({
+            where: { user_id: userId },
+            include: [
+                {
+                    model: require("../models").City,
+                    as: "city",
+                    attributes: ["id", "cityName"],
+                },
+                {
+                    model: require("../models").State,
+                    as: "state",
+                    attributes: ["id", "name"],
+                },
+            ],
+        });
+
+        if (!customer) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer profile not found",
+            });
+        }
+
+        // Transform data for mobile consumption
+        const mobileProfile = {
+            id: customer.id,
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+            date_of_birth: customer.date_of_birth,
+            gender: customer.gender,
+            address: customer.address,
+            city: customer.city
+                ? {
+                      id: customer.city.id,
+                      name: customer.city.cityName,
+                  }
+                : null,
+            state: customer.state
+                ? {
+                      id: customer.state.id,
+                      name: customer.state.name,
+                  }
+                : null,
+            emergency_contact_name: customer.emergency_contact_name,
+            emergency_contact_phone: customer.emergency_contact_phone,
+            medical_conditions: customer.medical_conditions,
+            dietary_restrictions: customer.dietary_restrictions,
+            created_at: customer.created_at,
+            updated_at: customer.updated_at,
+        };
+
+        res.json({
+            success: true,
+            profile: mobileProfile,
+        });
+    } catch (error) {
+        console.error("Error fetching mobile customer profile:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch profile",
+        });
+    }
+};
+
+// Mobile App: Update customer profile (optimized for mobile)
+const updateMobileCustomerProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const updateData = req.body;
+
+        // Only allow updating specific fields for mobile
+        const allowedFields = [
+            "name",
+            "date_of_birth",
+            "gender",
+            "address",
+            "city_id",
+            "state_id",
+            "emergency_contact_name",
+            "emergency_contact_phone",
+            "medical_conditions",
+            "dietary_restrictions",
+        ];
+
+        const filteredData = {};
+        allowedFields.forEach((field) => {
+            if (updateData[field] !== undefined) {
+                filteredData[field] = updateData[field];
+            }
+        });
+
+        const customer = await Customer.findOne({
+            where: { user_id: userId },
+        });
+
+        if (!customer) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer profile not found",
+            });
+        }
+
+        // Update customer profile
+        await customer.update(filteredData);
+
+        // Fetch updated profile with associations
+        const updatedCustomer = await Customer.findOne({
+            where: { user_id: userId },
+            include: [
+                {
+                    model: require("../models").City,
+                    as: "city",
+                    attributes: ["id", "cityName"],
+                },
+                {
+                    model: require("../models").State,
+                    as: "state",
+                    attributes: ["id", "name"],
+                },
+            ],
+        });
+
+        // Transform data for mobile consumption
+        const mobileProfile = {
+            id: updatedCustomer.id,
+            name: updatedCustomer.name,
+            email: updatedCustomer.email,
+            phone: updatedCustomer.phone,
+            date_of_birth: updatedCustomer.date_of_birth,
+            gender: updatedCustomer.gender,
+            address: updatedCustomer.address,
+            city: updatedCustomer.city
+                ? {
+                      id: updatedCustomer.city.id,
+                      name: updatedCustomer.city.cityName,
+                  }
+                : null,
+            state: updatedCustomer.state
+                ? {
+                      id: updatedCustomer.state.id,
+                      name: updatedCustomer.state.name,
+                  }
+                : null,
+            emergency_contact_name: updatedCustomer.emergency_contact_name,
+            emergency_contact_phone: updatedCustomer.emergency_contact_phone,
+            medical_conditions: updatedCustomer.medical_conditions,
+            dietary_restrictions: updatedCustomer.dietary_restrictions,
+            created_at: updatedCustomer.created_at,
+            updated_at: updatedCustomer.updated_at,
+        };
+
+        res.json({
+            success: true,
+            message: "Profile updated successfully",
+            profile: mobileProfile,
+        });
+    } catch (error) {
+        console.error("Error updating mobile customer profile:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update profile",
+        });
+    }
+};
+
+// Mobile App: Get customer analytics (customer-specific)
+const getMobileCustomerAnalytics = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { startDate, endDate } = req.query;
+
+        const whereClause = { user_id: userId };
+        if (startDate && endDate) {
+            whereClause.created_at = {
+                [Op.between]: [new Date(startDate), new Date(endDate)],
+            };
+        }
+
+        const analytics = await Promise.all([
+            // Total bookings by status
+            Booking.findAll({
+                where: whereClause,
+                attributes: [
+                    "status",
+                    [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+                ],
+                group: ["status"],
+            }),
+
+            // Total spent
+            Booking.findAll({
+                where: { ...whereClause, status: "confirmed" },
+                attributes: [
+                    [
+                        sequelize.fn("SUM", sequelize.col("final_amount")),
+                        "totalSpent",
+                    ],
+                    [
+                        sequelize.fn("COUNT", sequelize.col("id")),
+                        "totalBookings",
+                    ],
+                ],
+            }),
+
+            // Average booking value
+            Booking.findAll({
+                where: { ...whereClause, status: "confirmed" },
+                attributes: [
+                    [
+                        sequelize.fn("AVG", sequelize.col("final_amount")),
+                        "averageBookingValue",
+                    ],
+                ],
+            }),
+        ]);
+
+        res.json({
+            success: true,
+            analytics: {
+                statusBreakdown: analytics[0],
+                spending: analytics[1][0] || {
+                    totalSpent: 0,
+                    totalBookings: 0,
+                },
+                averageBookingValue: analytics[2][0]?.averageBookingValue || 0,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching mobile customer analytics:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch analytics",
+        });
+    }
+};
+
+// Get travelers for a specific customer
+const getCustomerTravelers = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const vendorId = req.user.vendorId;
+
+        // Verify the customer exists and has bookings with this vendor
+        const customer = await Customer.findByPk(id);
+        if (!customer) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer not found",
+            });
+        }
+
+        // Check if customer has any bookings with this vendor
+        const hasBookings = await Booking.findOne({
+            where: {
+                customer_id: id,
+                vendor_id: vendorId,
+            },
+        });
+
+        if (!hasBookings) {
+            return res.status(403).json({
+                success: false,
+                message: "Customer has no bookings with this vendor",
+            });
+        }
+
+        // Get all travelers for this customer
+        const travelers = await require("../models").Traveler.findAll({
+            where: {
+                customer_id: id,
+                is_active: true,
+            },
+            order: [["createdAt", "DESC"]],
+        });
+
+        res.json({
+            success: true,
+            data: travelers,
+        });
+    } catch (error) {
+        console.error("Error fetching customer travelers:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch travelers",
+        });
+    }
+};
+
 module.exports = {
     getVendorCustomers,
     getCustomerById,
@@ -608,4 +902,8 @@ module.exports = {
     updateCustomer,
     createCustomer,
     debugListCustomers,
+    getMobileCustomerProfile,
+    updateMobileCustomerProfile,
+    getMobileCustomerAnalytics,
+    getCustomerTravelers,
 };

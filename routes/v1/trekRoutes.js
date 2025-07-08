@@ -65,24 +65,4 @@ router.get("/search", trekController.searchTreks); // Search treks
 router.get("/category/:categoryId", trekController.getTreksByCategory); // Get treks by category
 router.get("/:id", trekController.getPublicTrekById); // Get single trek details
 
-// Vendor routes (require authentication)
-router.get("/vendor/my-treks", authMiddleware, trekController.getVendorTreks);
-router.get("/vendor/:id", authMiddleware, trekController.getTrekById);
-router.post("/vendor", authMiddleware, validateTrek, trekController.createTrek);
-router.put(
-    "/vendor/:id",
-    authMiddleware,
-    validateTrek,
-    trekController.updateTrek
-);
-router.delete("/vendor/:id", authMiddleware, trekController.deleteTrek);
-router.patch(
-    "/vendor/:id/status",
-    authMiddleware,
-    trekController.toggleTrekStatus
-);
-
-// Admin routes (require authentication and admin role)
-router.get("/admin/all", authMiddleware, trekController.getAllTreks);
-
 module.exports = router;

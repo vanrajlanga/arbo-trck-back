@@ -54,11 +54,11 @@ router.post(
 // Get user's bookings
 router.get("/my-bookings", bookingController.getUserBookings);
 
-// Get specific booking details
-router.get("/:id", bookingController.getBookingById);
+// Get specific booking details (mobile optimized)
+router.get("/:id", bookingController.getMobileBookingById);
 
-// Cancel a booking
-router.patch("/:id/cancel", bookingController.cancelBooking);
+// Cancel a booking (mobile optimized)
+router.patch("/:id/cancel", bookingController.updateMobileBookingStatus);
 
 // Update booking (limited fields)
 router.put("/:id", bookingController.updateBooking);
@@ -67,21 +67,18 @@ router.put("/:id", bookingController.updateBooking);
 router.post("/:id/payment", bookingController.processPayment);
 router.get("/:id/payment-status", bookingController.getPaymentStatus);
 
+// Mobile payment flow routes
+router.post("/create-trek-order", bookingController.createMobileTrekOrder);
+router.post("/verify-payment", bookingController.verifyMobilePayment);
+
 // Booking confirmation and documents
 router.get("/:id/confirmation", bookingController.getBookingConfirmation);
 router.get("/:id/invoice", bookingController.getBookingInvoice);
 
-// Vendor routes (for managing bookings)
-router.post("/vendor/bookings", bookingController.createVendorBooking);
-router.get("/vendor/bookings", bookingController.getVendorBookings);
-router.patch("/vendor/:id/status", bookingController.updateBookingStatus);
-router.get(
-    "/vendor/:id/participants",
-    bookingController.getBookingParticipants
-);
+// Get booking participants (mobile optimized)
+router.get("/:id/participants", bookingController.getMobileBookingParticipants);
 
-// Admin routes
-router.get("/admin/all", bookingController.getAllBookings);
-router.get("/admin/analytics", bookingController.getBookingAnalytics);
+// Get customer analytics (mobile optimized)
+router.get("/analytics", bookingController.getMobileBookingAnalytics);
 
 module.exports = router;

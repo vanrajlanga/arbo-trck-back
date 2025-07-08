@@ -15,6 +15,11 @@ const {
 } = require("../models");
 const { Op } = require("sequelize");
 const logger = require("../utils/logger");
+const {
+    createRazorpayOrder,
+    verifyRazorpaySignature,
+    getPaymentDetails,
+} = require("../utils/razorpayUtils");
 
 // Create a new booking
 const createBooking = async (req, res) => {
@@ -936,6 +941,81 @@ const getAllBookings = async (req, res) => {
     }
 };
 
+// Vendor: Get booking analytics (vendor-specific)
+const getVendorBookingAnalytics = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const vendorId = req.user.vendorId; // Get vendor ID from JWT token
+
+        const whereClause = { vendor_id: vendorId };
+        if (startDate && endDate) {
+            whereClause.created_at = {
+                [Op.between]: [new Date(startDate), new Date(endDate)],
+            };
+        }
+
+        const analytics = await Promise.all([
+            // Total bookings by status for this vendor
+            Booking.findAll({
+                where: whereClause,
+                attributes: [
+                    "status",
+                    [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+                ],
+                group: ["status"],
+            }),
+
+            // Revenue analytics for this vendor
+            Booking.findAll({
+                where: { ...whereClause, status: "confirmed" },
+                attributes: [
+                    [
+                        sequelize.fn("SUM", sequelize.col("final_amount")),
+                        "totalRevenue",
+                    ],
+                    [
+                        sequelize.fn("COUNT", sequelize.col("id")),
+                        "confirmedBookings",
+                    ],
+                ],
+            }),
+
+            // Top treks for this vendor
+            Booking.findAll({
+                where: whereClause,
+                include: [{ model: Trek, as: "trek" }],
+                attributes: [
+                    "trek_id",
+                    [
+                        sequelize.fn("COUNT", sequelize.col("Booking.id")),
+                        "bookingCount",
+                    ],
+                ],
+                group: ["trek_id", "trek.id"],
+                order: [
+                    [
+                        sequelize.fn("COUNT", sequelize.col("Booking.id")),
+                        "DESC",
+                    ],
+                ],
+                limit: 10,
+            }),
+        ]);
+
+        res.json({
+            statusBreakdown: analytics[0],
+            revenue: analytics[1][0] || {
+                totalRevenue: 0,
+                confirmedBookings: 0,
+            },
+            topTreks: analytics[2],
+        });
+    } catch (error) {
+        console.error("Error fetching vendor booking analytics:", error);
+        res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+};
+
 // Admin: Get booking analytics
 const getBookingAnalytics = async (req, res) => {
     try {
@@ -1010,6 +1090,963 @@ const getBookingAnalytics = async (req, res) => {
     }
 };
 
+// Mobile App: Get booking by ID (optimized for mobile)
+const getMobileBookingById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const booking = await Booking.findOne({
+            where: {
+                id: id,
+                user_id: userId,
+            },
+            include: [
+                {
+                    model: Trek,
+                    as: "trek",
+                    attributes: [
+                        "id",
+                        "title",
+                        "destination",
+                        "start_date",
+                        "end_date",
+                        "base_price",
+                        "images",
+                        "description",
+                    ],
+                },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
+                {
+                    model: PaymentLog,
+                    as: "payments",
+                    attributes: [
+                        "id",
+                        "amount",
+                        "status",
+                        "payment_method",
+                        "created_at",
+                    ],
+                },
+            ],
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        // Transform data for mobile consumption
+        const mobileBooking = {
+            id: booking.id,
+            booking_date: booking.booking_date,
+            trek_date: booking.trek?.start_date,
+            status: booking.status,
+            payment_status: booking.payment_status,
+            total_amount: booking.total_amount,
+            final_amount: booking.final_amount,
+            discount_amount: booking.discount_amount,
+            trek: {
+                id: booking.trek?.id,
+                title: booking.trek?.title,
+                destination: booking.trek?.destination,
+                start_date: booking.trek?.start_date,
+                end_date: booking.trek?.end_date,
+                base_price: booking.trek?.base_price,
+                images: booking.trek?.images,
+                description: booking.trek?.description,
+            },
+            travelers:
+                booking.travelers?.map((bt) => ({
+                    id: bt.traveler.id,
+                    name: bt.traveler.name,
+                    age: bt.traveler.age,
+                    gender: bt.traveler.gender,
+                    phone: bt.traveler.phone,
+                    emergency_contact: bt.traveler.emergency_contact_phone,
+                    is_primary: bt.is_primary,
+                    status: bt.status,
+                })) || [],
+            payments:
+                booking.payments?.map((payment) => ({
+                    id: payment.id,
+                    amount: payment.amount,
+                    status: payment.status,
+                    payment_method: payment.payment_method,
+                    created_at: payment.created_at,
+                })) || [],
+        };
+
+        res.json({
+            success: true,
+            booking: mobileBooking,
+        });
+    } catch (error) {
+        console.error("Error fetching mobile booking:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch booking",
+        });
+    }
+};
+
+// Mobile App: Get booking participants (optimized for mobile)
+const getMobileBookingParticipants = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const booking = await Booking.findOne({
+            where: {
+                id: id,
+                user_id: userId,
+            },
+            include: [
+                {
+                    model: Trek,
+                    as: "trek",
+                    attributes: ["id", "title", "destination", "start_date"],
+                },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
+            ],
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        // Transform travelers data for mobile
+        const travelers = booking.travelers.map((bt) => ({
+            id: bt.traveler.id,
+            name: bt.traveler.name,
+            age: bt.traveler.age,
+            gender: bt.traveler.gender,
+            phone: bt.traveler.phone,
+            emergency_contact: bt.traveler.emergency_contact_phone,
+            medical_conditions: bt.traveler.medical_conditions,
+            is_primary: bt.is_primary,
+            status: bt.status,
+        }));
+
+        res.json({
+            success: true,
+            bookingId: booking.id,
+            trek: {
+                id: booking.trek?.id,
+                title: booking.trek?.title,
+                destination: booking.trek?.destination,
+                start_date: booking.trek?.start_date,
+            },
+            travelers: travelers,
+        });
+    } catch (error) {
+        console.error("Error fetching mobile booking participants:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch travelers",
+        });
+    }
+};
+
+// Mobile App: Update booking status (customer can only cancel)
+const updateMobileBookingStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const userId = req.user.id;
+
+        // Only allow customers to cancel their own bookings
+        if (status !== "cancelled") {
+            return res.status(403).json({
+                success: false,
+                message: "Customers can only cancel bookings",
+            });
+        }
+
+        const booking = await Booking.findOne({
+            where: {
+                id: id,
+                user_id: userId,
+            },
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        // Check if booking can be cancelled
+        if (booking.status === "cancelled") {
+            return res.status(400).json({
+                success: false,
+                message: "Booking is already cancelled",
+            });
+        }
+
+        if (booking.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot cancel completed booking",
+            });
+        }
+
+        // Update booking status
+        await booking.update({
+            status: status,
+            cancelled_at: new Date(),
+        });
+
+        res.json({
+            success: true,
+            message: "Booking cancelled successfully",
+            booking: {
+                id: booking.id,
+                status: booking.status,
+                cancelled_at: booking.cancelled_at,
+            },
+        });
+    } catch (error) {
+        console.error("Error updating mobile booking status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update booking status",
+        });
+    }
+};
+
+// Mobile App: Get booking analytics (customer-specific)
+const getMobileBookingAnalytics = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { startDate, endDate } = req.query;
+
+        const whereClause = { user_id: userId };
+        if (startDate && endDate) {
+            whereClause.created_at = {
+                [Op.between]: [new Date(startDate), new Date(endDate)],
+            };
+        }
+
+        const analytics = await Promise.all([
+            // Booking status breakdown for this customer
+            Booking.findAll({
+                where: whereClause,
+                attributes: [
+                    "status",
+                    [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+                ],
+                group: ["status"],
+            }),
+
+            // Total spent by this customer
+            Booking.findAll({
+                where: { ...whereClause, status: "confirmed" },
+                attributes: [
+                    [
+                        sequelize.fn("SUM", sequelize.col("final_amount")),
+                        "totalSpent",
+                    ],
+                    [
+                        sequelize.fn("COUNT", sequelize.col("id")),
+                        "confirmedBookings",
+                    ],
+                ],
+            }),
+
+            // Favorite destinations for this customer
+            Booking.findAll({
+                where: whereClause,
+                include: [{ model: Trek, as: "trek" }],
+                attributes: [
+                    "trek_id",
+                    [
+                        sequelize.fn("COUNT", sequelize.col("Booking.id")),
+                        "bookingCount",
+                    ],
+                ],
+                group: ["trek_id", "trek.id"],
+                order: [
+                    [
+                        sequelize.fn("COUNT", sequelize.col("Booking.id")),
+                        "DESC",
+                    ],
+                ],
+                limit: 5,
+            }),
+        ]);
+
+        res.json({
+            success: true,
+            analytics: {
+                statusBreakdown: analytics[0],
+                spending: analytics[1][0] || {
+                    totalSpent: 0,
+                    confirmedBookings: 0,
+                },
+                favoriteDestinations: analytics[2],
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching mobile booking analytics:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch analytics",
+        });
+    }
+};
+
+// Vendor: Create Razorpay order for booking
+const createTrekOrder = async (req, res) => {
+    try {
+        const { trekId, customerId, travelers, finalAmount } = req.body;
+        const vendorId = req.user.vendorId;
+
+        // Validate required fields
+        if (!trekId || !customerId || !travelers || !finalAmount) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Trek ID, customer ID, travelers, and final amount are required",
+            });
+        }
+
+        // Verify trek exists and belongs to vendor
+        const trek = await Trek.findOne({
+            where: {
+                id: trekId,
+                vendor_id: vendorId,
+            },
+        });
+
+        if (!trek) {
+            return res.status(404).json({
+                success: false,
+                message: "Trek not found or not authorized",
+            });
+        }
+
+        // Verify customer exists
+        const customer = await Customer.findByPk(customerId);
+        if (!customer) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer not found",
+            });
+        }
+
+        // Create Razorpay order
+        const orderResult = await createRazorpayOrder(
+            finalAmount,
+            "INR",
+            `booking_${trekId}_${customerId}_${Date.now()}`
+        );
+
+        if (!orderResult.success) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to create payment order",
+                error: orderResult.error,
+            });
+        }
+
+        // Store order details in session or temporary storage
+        // For now, we'll return the order details
+        res.json({
+            success: true,
+            message: "Payment order created successfully",
+            order: {
+                id: orderResult.order.id,
+                amount: orderResult.order.amount,
+                currency: orderResult.order.currency,
+                receipt: orderResult.order.receipt,
+            },
+            bookingDetails: {
+                trekId,
+                customerId,
+                travelers,
+                finalAmount,
+            },
+        });
+    } catch (error) {
+        console.error("Error creating trek order:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create payment order",
+        });
+    }
+};
+
+// Vendor: Verify Razorpay payment and create booking
+const verifyPaymentAndCreateBooking = async (req, res) => {
+    try {
+        const {
+            orderId,
+            paymentId,
+            signature,
+            trekId,
+            customerId,
+            travelers,
+            finalAmount,
+            pickupPointId,
+            couponCode,
+        } = req.body;
+        const vendorId = req.user.vendorId;
+
+        // Validate required fields
+        if (!orderId || !paymentId || !signature) {
+            return res.status(400).json({
+                success: false,
+                message: "Order ID, payment ID, and signature are required",
+            });
+        }
+
+        // Verify Razorpay signature
+        const isSignatureValid = verifyRazorpaySignature(
+            orderId,
+            paymentId,
+            signature
+        );
+        if (!isSignatureValid) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid payment signature",
+            });
+        }
+
+        // Get payment details from Razorpay
+        const paymentResult = await getPaymentDetails(paymentId);
+        if (!paymentResult.success) {
+            return res.status(400).json({
+                success: false,
+                message: "Failed to verify payment",
+            });
+        }
+
+        const payment = paymentResult.payment;
+
+        // Verify payment status
+        if (payment.status !== "captured") {
+            return res.status(400).json({
+                success: false,
+                message: "Payment not completed",
+            });
+        }
+
+        // Verify payment amount
+        const expectedAmount = Math.round(finalAmount * 100); // Convert to paise
+        if (payment.amount !== expectedAmount) {
+            return res.status(400).json({
+                success: false,
+                message: "Payment amount mismatch",
+            });
+        }
+
+        // Create the booking
+        const bookingData = {
+            trek_id: trekId,
+            customer_id: customerId,
+            vendor_id: vendorId,
+            total_travelers: travelers.length,
+            total_amount: finalAmount,
+            final_amount: finalAmount,
+            discount_amount: 0, // Will be calculated if coupon is applied
+            status: "confirmed",
+            payment_status: "completed",
+            booking_date: new Date(),
+            pickup_point_id: pickupPointId,
+        };
+
+        // Apply coupon if provided
+        if (couponCode) {
+            const coupon = await Coupon.findOne({
+                where: { code: couponCode, status: "active" },
+            });
+
+            if (coupon) {
+                const discountAmount =
+                    (finalAmount * coupon.discount_percentage) / 100;
+                bookingData.discount_amount = discountAmount;
+                bookingData.final_amount = finalAmount - discountAmount;
+            }
+        }
+
+        // Create booking
+        const booking = await Booking.create(bookingData);
+
+        // Create travelers
+        const travelerPromises = travelers.map(async (travelerData, index) => {
+            // Create or find traveler
+            let traveler = await Traveler.findOne({
+                where: {
+                    phone: travelerData.phone,
+                    customer_id: customerId,
+                },
+            });
+
+            if (!traveler) {
+                traveler = await Traveler.create({
+                    customer_id: customerId,
+                    name: travelerData.name,
+                    age: travelerData.age,
+                    gender: travelerData.gender,
+                    phone: travelerData.phone,
+                    emergency_contact_name: travelerData.emergency_contact_name,
+                    emergency_contact_phone:
+                        travelerData.emergency_contact_phone,
+                    emergency_contact_relation:
+                        travelerData.emergency_contact_relation || null,
+                    medical_conditions: travelerData.medical_conditions || null,
+                    dietary_restrictions:
+                        travelerData.dietary_restrictions || null,
+                });
+            }
+
+            // Create booking traveler relationship
+            return BookingTraveler.create({
+                booking_id: booking.id,
+                traveler_id: traveler.id,
+                is_primary: index === 0, // First traveler is primary
+                status: "confirmed",
+            });
+        });
+
+        await Promise.all(travelerPromises);
+
+        // Create payment log
+        await PaymentLog.create({
+            booking_id: booking.id,
+            amount: booking.final_amount,
+            payment_method: "razorpay",
+            transaction_id: paymentId,
+            status: "success",
+            payment_details: JSON.stringify(payment),
+        });
+
+        // Fetch complete booking with associations
+        const completeBooking = await Booking.findOne({
+            where: { id: booking.id },
+            include: [
+                { model: Trek, as: "trek" },
+                { model: Customer, as: "customer" },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [{ model: Traveler, as: "traveler" }],
+                },
+                { model: PaymentLog, as: "payments" },
+            ],
+        });
+
+        res.json({
+            success: true,
+            message: "Booking created successfully with payment",
+            booking: completeBooking,
+            payment: {
+                orderId,
+                paymentId,
+                amount: payment.amount,
+                status: payment.status,
+            },
+        });
+    } catch (error) {
+        console.error("Error verifying payment and creating booking:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create booking",
+        });
+    }
+};
+
+// Mobile: Create Razorpay order for trek booking
+const createMobileTrekOrder = async (req, res) => {
+    try {
+        const {
+            trekId,
+            travelers,
+            pickupPointId,
+            couponCode,
+            specialRequests,
+        } = req.body;
+        const customerId = req.user.id;
+
+        // Validate required fields
+        if (!trekId || !travelers || travelers.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Trek ID and travelers are required",
+            });
+        }
+
+        // Validate travelers
+        for (let i = 0; i < travelers.length; i++) {
+            const traveler = travelers[i];
+            if (
+                !traveler.name ||
+                !traveler.age ||
+                !traveler.phone ||
+                !traveler.emergency_contact_phone
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Please fill all required fields for traveler ${
+                        i + 1
+                    }`,
+                });
+            }
+        }
+
+        // Get trek details
+        const trek = await Trek.findByPk(trekId, {
+            include: [{ model: Vendor, as: "vendor" }],
+        });
+
+        if (!trek) {
+            return res.status(404).json({
+                success: false,
+                message: "Trek not found",
+            });
+        }
+
+        if (trek.status !== "active") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot book inactive trek",
+            });
+        }
+
+        // Calculate amount
+        const baseAmount = trek.base_price || trek.price || 0;
+        let totalAmount = baseAmount * travelers.length;
+        let discountAmount = 0;
+
+        // Apply coupon if provided
+        if (couponCode) {
+            const coupon = await Coupon.findOne({
+                where: { code: couponCode, status: "active" },
+            });
+
+            if (coupon) {
+                if (coupon.discount_type === "percentage") {
+                    discountAmount =
+                        (totalAmount * coupon.discount_value) / 100;
+                } else {
+                    discountAmount = coupon.discount_value;
+                }
+            }
+        }
+
+        const finalAmount = totalAmount - discountAmount;
+
+        // Create Razorpay order
+        const orderData = {
+            amount: Math.round(finalAmount * 100), // Convert to paise
+            currency: "INR",
+            receipt: `trek_${trekId}_${Date.now()}`,
+            notes: {
+                trekId: trekId.toString(),
+                customerId: customerId.toString(),
+                travelers: travelers.length.toString(),
+            },
+        };
+
+        const orderResponse = await createRazorpayOrder(orderData);
+
+        if (!orderResponse.success) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to create payment order",
+            });
+        }
+
+        // Store order details temporarily (you might want to store this in a separate table)
+        // For now, we'll include the booking data in the response
+
+        res.json({
+            success: true,
+            message: "Order created successfully",
+            order: orderResponse.order,
+            bookingData: {
+                trekId,
+                customerId,
+                travelers,
+                pickupPointId,
+                couponCode,
+                specialRequests,
+                totalAmount,
+                discountAmount,
+                finalAmount,
+            },
+        });
+    } catch (error) {
+        console.error("Error creating mobile trek order:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create order",
+        });
+    }
+};
+
+// Mobile: Verify payment and create booking
+const verifyMobilePayment = async (req, res) => {
+    try {
+        const {
+            orderId,
+            paymentId,
+            signature,
+            trekId,
+            travelers,
+            pickupPointId,
+            couponCode,
+            specialRequests,
+        } = req.body;
+        const customerId = req.user.id;
+
+        // Validate required fields
+        if (!orderId || !paymentId || !signature) {
+            return res.status(400).json({
+                success: false,
+                message: "Order ID, payment ID, and signature are required",
+            });
+        }
+
+        // Verify Razorpay signature
+        const isSignatureValid = verifyRazorpaySignature(
+            orderId,
+            paymentId,
+            signature
+        );
+        if (!isSignatureValid) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid payment signature",
+            });
+        }
+
+        // Get payment details from Razorpay
+        const paymentResult = await getPaymentDetails(paymentId);
+        if (!paymentResult.success) {
+            return res.status(400).json({
+                success: false,
+                message: "Failed to verify payment",
+            });
+        }
+
+        const payment = paymentResult.payment;
+
+        // Verify payment status
+        if (payment.status !== "captured") {
+            return res.status(400).json({
+                success: false,
+                message: "Payment not completed",
+            });
+        }
+
+        // Get trek details
+        const trek = await Trek.findByPk(trekId, {
+            include: [{ model: Vendor, as: "vendor" }],
+        });
+
+        if (!trek) {
+            return res.status(404).json({
+                success: false,
+                message: "Trek not found",
+            });
+        }
+
+        // Calculate amount
+        const baseAmount = trek.base_price || trek.price || 0;
+        let totalAmount = baseAmount * travelers.length;
+        let discountAmount = 0;
+        let couponId = null;
+
+        // Apply coupon if provided
+        if (couponCode) {
+            const coupon = await Coupon.findOne({
+                where: { code: couponCode, status: "active" },
+            });
+
+            if (coupon) {
+                if (coupon.discount_type === "percentage") {
+                    discountAmount =
+                        (totalAmount * coupon.discount_value) / 100;
+                } else {
+                    discountAmount = coupon.discount_value;
+                }
+                couponId = coupon.id;
+            }
+        }
+
+        const finalAmount = totalAmount - discountAmount;
+
+        // Verify payment amount
+        const expectedAmount = Math.round(finalAmount * 100); // Convert to paise
+        if (payment.amount !== expectedAmount) {
+            return res.status(400).json({
+                success: false,
+                message: "Payment amount mismatch",
+            });
+        }
+
+        // Create the booking
+        const bookingData = {
+            customer_id: customerId,
+            trek_id: trekId,
+            vendor_id: trek.vendor_id,
+            pickup_point_id: pickupPointId,
+            coupon_id: couponId,
+            total_travelers: travelers.length,
+            total_amount: totalAmount,
+            discount_amount: discountAmount,
+            final_amount: finalAmount,
+            status: "confirmed",
+            payment_status: "completed",
+            booking_date: new Date(),
+            special_requests: specialRequests,
+            booking_source: "mobile",
+        };
+
+        // Create booking
+        const booking = await Booking.create(bookingData);
+
+        // Create travelers
+        const travelerPromises = travelers.map(async (travelerData, index) => {
+            // Create or find traveler
+            let traveler = await Traveler.findOne({
+                where: {
+                    phone: travelerData.phone,
+                    customer_id: customerId,
+                },
+            });
+
+            if (!traveler) {
+                traveler = await Traveler.create({
+                    customer_id: customerId,
+                    name: travelerData.name,
+                    age: travelerData.age,
+                    gender: travelerData.gender,
+                    phone: travelerData.phone,
+                    emergency_contact_name: travelerData.emergency_contact_name,
+                    emergency_contact_phone:
+                        travelerData.emergency_contact_phone,
+                    emergency_contact_relation:
+                        travelerData.emergency_contact_relation || null,
+                    medical_conditions: travelerData.medical_conditions || null,
+                    dietary_restrictions:
+                        travelerData.dietary_restrictions || null,
+                });
+            }
+
+            // Create booking traveler relationship
+            return BookingTraveler.create({
+                booking_id: booking.id,
+                traveler_id: traveler.id,
+                is_primary: index === 0, // First traveler is primary
+                status: "confirmed",
+            });
+        });
+
+        await Promise.all(travelerPromises);
+
+        // Create payment log
+        await PaymentLog.create({
+            booking_id: booking.id,
+            amount: booking.final_amount,
+            payment_method: "razorpay",
+            transaction_id: paymentId,
+            status: "success",
+            payment_details: JSON.stringify(payment),
+        });
+
+        // Fetch complete booking with associations (mobile optimized)
+        const completeBooking = await Booking.findOne({
+            where: { id: booking.id },
+            include: [
+                {
+                    model: Trek,
+                    as: "trek",
+                    attributes: [
+                        "id",
+                        "title",
+                        "description",
+                        "base_price",
+                        "duration",
+                        "difficulty",
+                        "meeting_point",
+                        "meeting_time",
+                    ],
+                },
+                {
+                    model: Customer,
+                    as: "customer",
+                    attributes: ["id", "name", "email", "phone"],
+                },
+                {
+                    model: BookingTraveler,
+                    as: "travelers",
+                    include: [
+                        {
+                            model: Traveler,
+                            as: "traveler",
+                            attributes: [
+                                "id",
+                                "name",
+                                "age",
+                                "gender",
+                                "phone",
+                                "emergency_contact_name",
+                                "emergency_contact_phone",
+                            ],
+                        },
+                    ],
+                },
+                {
+                    model: PaymentLog,
+                    as: "payments",
+                    attributes: [
+                        "amount",
+                        "payment_method",
+                        "transaction_id",
+                        "status",
+                    ],
+                },
+            ],
+        });
+
+        res.json({
+            success: true,
+            message: "Booking created successfully with payment",
+            booking: completeBooking,
+            payment: {
+                orderId,
+                paymentId,
+                amount: payment.amount,
+                status: payment.status,
+            },
+        });
+    } catch (error) {
+        console.error("Error verifying mobile payment:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create booking",
+        });
+    }
+};
+
 module.exports = {
     createBooking,
     createVendorBooking,
@@ -1026,4 +2063,13 @@ module.exports = {
     getBookingParticipants,
     getAllBookings,
     getBookingAnalytics,
+    getVendorBookingAnalytics,
+    getMobileBookingById,
+    getMobileBookingParticipants,
+    updateMobileBookingStatus,
+    getMobileBookingAnalytics,
+    createTrekOrder,
+    verifyPaymentAndCreateBooking,
+    createMobileTrekOrder,
+    verifyMobilePayment,
 };

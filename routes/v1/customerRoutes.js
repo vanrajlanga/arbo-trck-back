@@ -6,10 +6,9 @@ const authMiddleware = require("../../middleware/authMiddleware");
 // All routes require authentication
 router.use(authMiddleware);
 
-// Vendor customer management routes
-router.get("/", customerController.getVendorCustomers);
-router.get("/analytics", customerController.getCustomerAnalytics);
-router.get("/:id", customerController.getCustomerById);
-router.put("/:id", customerController.updateCustomer);
+// Mobile app customer routes (customer-specific)
+router.get("/profile", customerController.getMobileCustomerProfile);
+router.put("/profile", customerController.updateMobileCustomerProfile);
+router.get("/analytics", customerController.getMobileCustomerAnalytics);
 
 module.exports = router;
