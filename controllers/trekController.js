@@ -228,6 +228,41 @@ exports.getVendorTreks = async (req, res) => {
                     status: trek.status,
                     meetingPoint: trek.meeting_point || "",
                     meetingTime: trek.meeting_time || "",
+                    images:
+                        trek.images?.map((img) => `storage/${img.url}`) || [],
+                    itinerary:
+                        trek.itinerary_items?.map((item) => ({
+                            day: item.day_number,
+                            activities: item.activities || [],
+                        })) || [],
+                    accommodations:
+                        trek.accommodations?.map((acc, index) => ({
+                            night: index + 1,
+                            type: acc.type || "",
+                            date: acc.details?.date || "",
+                            location: acc.details?.location || "",
+                            description: acc.details?.description || "",
+                        })) || [],
+                    trekStages:
+                        trek.trek_stages?.map((stage) => ({
+                            id: stage.id,
+                            stage_name: stage.stage_name || stage.name || "",
+                            means_of_transport: stage.means_of_transport || "",
+                            date_time: stage.date_time || "",
+                        })) || [],
+                    batches:
+                        trek.batches?.map((batch) => ({
+                            id: batch.id,
+                            startDate: batch.start_date,
+                            endDate: batch.end_date,
+                            capacity: batch.capacity,
+                            bookedSlots: batch.booked_slots || 0,
+                            availableSlots:
+                                batch.available_slots ||
+                                batch.capacity - (batch.booked_slots || 0),
+                        })) || [],
+                    inclusions: parseJsonField(trek.inclusions),
+                    exclusions: parseJsonField(trek.exclusions),
                     rating: trekRating.overall,
                     ratingDetails: trekRating,
                     hasDiscount: trek.has_discount || false,
@@ -368,7 +403,7 @@ exports.getTrekById = async (req, res) => {
             trekType: trek.trek_type,
             category: trek.category,
             status: trek.status === "active" ? "active" : "deactive",
-            images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+            images: trek.images?.map((img) => `storage/${img.url}`) || [],
             itinerary:
                 trek.itinerary_items?.map((item) => ({
                     day: item.day_number,
@@ -1090,7 +1125,7 @@ exports.getAllTreks = async (req, res) => {
             status: trek.status === "active" ? "active" : "deactive",
             vendorName: trek.vendor?.user?.name || "Unknown Vendor",
             vendorId: trek.vendor_id,
-            images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+            images: trek.images?.map((img) => `storage/${img.url}`) || [],
             createdAt: trek.created_at,
         }));
 
@@ -1191,7 +1226,7 @@ exports.getAllPublicTreks = async (req, res) => {
                     difficulty: trek.difficulty,
                     category: trek.category,
                     images:
-                        trek.images?.map((img) => `/storage/${img.url}`) || [],
+                        trek.images?.map((img) => `storage/${img.url}`) || [],
                     trekStages:
                         trek.trek_stages?.map((stage) => ({
                             id: stage.id,
@@ -1400,7 +1435,7 @@ exports.getPublicTrekById = async (req, res) => {
             category: trek.category,
             meetingPoint: trek.meeting_point,
             meetingTime: trek.meeting_time,
-            images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+            images: trek.images?.map((img) => `storage/${img.url}`) || [],
             itinerary:
                 trek.itinerary_items?.map((item) => ({
                     day: item.day_number,
@@ -1545,7 +1580,7 @@ exports.getTreksByCategory = async (req, res) => {
                         total + (batch.capacity - (batch.booked_slots || 0)),
                     0
                 ) || 0,
-            images: trek.images?.map((img) => `/storage/${img.url}`) || [],
+            images: trek.images?.map((img) => `storage/${img.url}`) || [],
             trekStages:
                 trek.trek_stages?.map((stage) => ({
                     id: stage.id,
