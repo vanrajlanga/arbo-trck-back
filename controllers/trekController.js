@@ -375,6 +375,52 @@ exports.getTrekById = async (req, res) => {
         trek.dataValues.ratingCount = trekRating.ratingCount;
         trek.dataValues.categoryRatings = trekRating.categories;
 
+        // Get individual customer ratings and reviews
+        const customerRatingsAndReviews = await Rating.findAll({
+            where: { trek_id: trek.id },
+            include: [
+                {
+                    model: RatingCategory,
+                    as: "category",
+                },
+                {
+                    model: Customer,
+                    as: "customer",
+                    attributes: ["id", "name", "email"],
+                },
+                {
+                    model: Review,
+                    as: "review",
+                    required: false,
+                },
+            ],
+            order: [["created_at", "DESC"]],
+        });
+
+        // Transform customer ratings and reviews
+        const customerRatingAndReview = customerRatingsAndReviews.map(
+            (rating) => ({
+                id: rating.id,
+                customer: {
+                    id: rating.customer?.id,
+                    name: rating.customer?.name || "Anonymous",
+                    email: rating.customer?.email,
+                },
+                category: rating.category?.name || "Overall",
+                rating: parseFloat(rating.rating_value),
+                review: rating.review
+                    ? {
+                          id: rating.review.id,
+                          title: rating.review.title,
+                          content: rating.review.content,
+                          rating: parseFloat(rating.review.rating),
+                          createdAt: rating.review.created_at,
+                      }
+                    : null,
+                createdAt: rating.created_at,
+            })
+        );
+
         // Transform data to match frontend format
         const transformedTrek = {
             id: trek.id,
@@ -442,6 +488,7 @@ exports.getTrekById = async (req, res) => {
             rating: trek.rating,
             ratingCount: trek.ratingCount,
             categoryRatings: trek.categoryRatings,
+            customerRatingAndReview: customerRatingAndReview,
             hasDiscount: trek.has_discount || false,
             discountValue: parseFloat(trek.discount_value) || 0.0,
             discountType: trek.discount_type || "percentage",
@@ -1356,21 +1403,113 @@ exports.getPublicTrekById = async (req, res) => {
         // Calculate trek rating from ratings
         const trekRating = await calculateTrekRating(trek.id);
 
-        // Get recent reviews for this trek
-        const recentReviews = await Review.findAll({
-            where: {
-                trek_id: trek.id,
-                status: "approved",
-            },
+        // Get individual customer ratings
+        const customerRatingsAndReviews = await Rating.findAll({
+            where: { trek_id: trek.id },
+            include: [
+                {
+                    model: RatingCategory,
+                    as: "category",
+                },
+                {
+                    model: Customer,
+                    as: "customer",
+                    attributes: ["id", "name", "email"],
+                },
+            ],
+            order: [["created_at", "DESC"]],
+        });
+
+        // Get all reviews for this trek
+        const allReviews = await Review.findAll({
+            where: { trek_id: trek.id, status: "approved" },
             include: [
                 {
                     model: Customer,
                     as: "customer",
-                    attributes: ["id", "name"],
+                    attributes: ["id", "name", "email"],
                 },
             ],
-            order: [["created_at", "DESC"]],
-            limit: 5, // Get latest 5 reviews
+        });
+
+        // Group ratings by customer to calculate overall and category ratings per customer
+        const customerRatingsMap = new Map();
+
+        customerRatingsAndReviews.forEach((rating) => {
+            const customerId = rating.customer?.id || "anonymous";
+            const customerName = rating.customer?.name || "Anonymous";
+            const customerEmail = rating.customer?.email;
+
+            if (!customerRatingsMap.has(customerId)) {
+                customerRatingsMap.set(customerId, {
+                    customer: {
+                        id: customerId,
+                        name: customerName,
+                        email: customerEmail,
+                    },
+                    ratings: [],
+                    reviews: [],
+                    categoryRatings: {},
+                });
+            }
+
+            const customerData = customerRatingsMap.get(customerId);
+            customerData.ratings.push({
+                id: rating.id,
+                category: rating.category?.name || "Overall",
+                rating: parseFloat(rating.rating_value),
+                createdAt: rating.created_at,
+            });
+
+            // Add category rating
+            if (rating.category?.name) {
+                customerData.categoryRatings[rating.category.name] = parseFloat(
+                    rating.rating_value
+                );
+            }
+        });
+
+        // Attach reviews to each customer
+        allReviews.forEach((review) => {
+            const customerId = review.customer?.id || "anonymous";
+            if (customerRatingsMap.has(customerId)) {
+                customerRatingsMap.get(customerId).reviews.push({
+                    id: review.id,
+                    title: review.title,
+                    content: review.content,
+                    createdAt: review.created_at,
+                });
+            }
+        });
+
+        // Calculate overall rating for each customer and transform to final format
+        const customerRatingAndReview = Array.from(
+            customerRatingsMap.values()
+        ).map((customerData) => {
+            // Calculate overall rating from category ratings
+            const categoryValues = Object.values(customerData.categoryRatings);
+            const overallRating =
+                categoryValues.length > 0
+                    ? parseFloat(
+                          (
+                              categoryValues.reduce(
+                                  (sum, rating) => sum + rating,
+                                  0
+                              ) / categoryValues.length
+                          ).toFixed(2)
+                      )
+                    : 0;
+
+            return {
+                customer: customerData.customer,
+                rating: overallRating, // Overall rating for this customer
+                categoryRatings: customerData.categoryRatings, // Individual category ratings
+                reviews: customerData.reviews, // All reviews by this customer
+                createdAt:
+                    customerData.ratings.length > 0
+                        ? customerData.ratings[0].createdAt
+                        : new Date(),
+            };
         });
 
         let batchInfo = null;
@@ -1474,6 +1613,7 @@ exports.getPublicTrekById = async (req, res) => {
             rating: trekRating.overall,
             ratingCount: trekRating.ratingCount,
             categoryRatings: trekRating.categories,
+            customerRatingAndReview: customerRatingAndReview,
             hasDiscount: trek.has_discount || false,
             discountValue: parseFloat(trek.discount_value) || 0.0,
             discountType: trek.discount_type || "percentage",
@@ -1493,16 +1633,6 @@ exports.getPublicTrekById = async (req, res) => {
                 rating: 4.0, // Default rating since not stored in database
                 status: trek.vendor.status,
             },
-            // Rating and review details
-            reviews: recentReviews.map((review) => ({
-                id: review.id,
-                title: review.title,
-                content: review.content,
-                customerName: review.customer?.name || "Anonymous",
-                isVerified: review.is_verified,
-                isHelpful: review.is_helpful,
-                createdAt: review.created_at,
-            })),
             createdAt: trek.created_at,
             updatedAt: trek.updated_at,
         };
