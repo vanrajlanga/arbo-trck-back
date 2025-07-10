@@ -4,13 +4,27 @@ const path = require('path');
 // Ensure logs directory exists
 const logsDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir, { recursive: true });
+    try {
+        fs.mkdirSync(logsDir, { recursive: true });
+        console.log('✅ Created logs directory:', logsDir);
+    } catch (error) {
+        console.error('❌ Failed to create logs directory:', error.message);
+    }
 }
 
 // Create write streams for different log types
 const createLogStream = (filename) => {
-    const logPath = path.join(logsDir, filename);
-    return fs.createWriteStream(logPath, { flags: 'a' });
+    try {
+        const logPath = path.join(logsDir, filename);
+        return fs.createWriteStream(logPath, { flags: 'a' });
+    } catch (error) {
+        console.error(`❌ Failed to create log stream for ${filename}:`, error.message);
+        // Return a dummy stream that does nothing
+        return {
+            write: () => {},
+            end: () => {}
+        };
+    }
 };
 
 const generalLogStream = createLogStream('general.log');
@@ -81,7 +95,6 @@ const loggingMiddleware = (req, res, next) => {
 
     let statusCode = 200;
     let responseBody = null;
-    let errorDetails = null;
 
     // Override res.status to capture status code
     res.status = function(code) {
@@ -101,35 +114,23 @@ const loggingMiddleware = (req, res, next) => {
         return originalJson.apply(this, arguments);
     };
 
-    // Capture errors from route handlers
-    const originalNext = next;
-    next = function(error) {
-        if (error) {
-            errorDetails = {
-                message: error.message,
-                stack: error.stack,
-                name: error.name
-            };
-        }
-        return originalNext.apply(this, arguments);
-    };
-
     // Log when response finishes
     res.on('finish', () => {
         const endTime = Date.now();
         const responseTime = endTime - startTime;
         
         const logStream = getLogStream(req.originalUrl || req.url);
-        const logEntry = formatLogEntry(req, res, responseTime, statusCode, errorDetails);
+        const logEntry = formatLogEntry(req, res, responseTime, statusCode);
         
-        logStream.write(logEntry + '\n');
+        try {
+            logStream.write(logEntry + '\n');
+        } catch (error) {
+            console.error('❌ Failed to write log:', error.message);
+        }
         
         // Also log to console for development
         if (process.env.NODE_ENV === 'development') {
             console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${statusCode} (${responseTime}ms)`);
-            if (errorDetails) {
-                console.error('Error details:', errorDetails);
-            }
         }
     });
 
@@ -141,7 +142,11 @@ const loggingMiddleware = (req, res, next) => {
         const logStream = getLogStream(req.originalUrl || req.url);
         const logEntry = formatLogEntry(req, res, responseTime, statusCode, error);
         
-        logStream.write(logEntry + '\n');
+        try {
+            logStream.write(logEntry + '\n');
+        } catch (writeError) {
+            console.error('❌ Failed to write error log:', writeError.message);
+        }
     });
 
     next();

@@ -204,6 +204,15 @@ app.get("/health", (req, res) =>
     })
 );
 
+// Test logging route
+app.get("/test-log", (req, res) => {
+    console.log("Testing logging middleware...");
+    res.json({
+        message: "Logging test successful",
+        timestamp: new Date().toISOString()
+    });
+});
+
 // API documentation endpoint
 app.get("/api", (req, res) => {
     res.json({
