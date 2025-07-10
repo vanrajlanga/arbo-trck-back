@@ -22,7 +22,7 @@ const createRazorpayOrder = async (
         }
 
         const options = {
-            amount: Math.round(amount * 100), // Convert to paise
+            amount: Math.round(amount.amount * 100), // Convert to paise
             currency: currency,
             receipt: receipt || `receipt_${Date.now()}`,
         };

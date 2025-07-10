@@ -325,50 +325,93 @@ const createBooking = async (req, res) => {
 const getCustomerBookings = async (req, res) => {
     try {
         const customerId = req.customer.id;
-        const { page = 1, limit = 10, status } = req.query;
-        const offset = (page - 1) * limit;
+        const { status } = req.query;
 
         const whereClause = { customer_id: customerId };
         if (status) {
             whereClause.status = status;
         }
 
-        const { count, rows: bookings } = await Booking.findAndCountAll({
+        const bookings = await Booking.findAll({
             where: whereClause,
+            attributes: ['id', 'status'],
             include: [
-                { model: Trek, as: "trek" },
-                { model: Vendor, as: "vendor" },
-                { model: Batch, as: "batch" },
-                { model: PickupPoint, as: "pickupPoint" },
+                { 
+                    model: Trek, 
+                    as: "trek",
+                    attributes: ['id', 'title', 'duration']
+                },
+                { 
+                    model: Vendor, 
+                    as: "vendor",
+                    attributes: ['id'],
+                    include: [{
+                        model: require('../models').User,
+                        as: 'user',
+                        attributes: ['name']
+                    }]
+                },
+                { 
+                    model: Batch, 
+                    as: "batch",
+                    attributes: ['id', 'start_date']
+                },
                 {
                     model: BookingTraveler,
                     as: "travelers",
-                    include: [{ model: Traveler, as: "traveler" }],
+                    include: [{
+                        model: Traveler,
+                        as: "traveler",
+                        attributes: ['id', 'name', 'age', 'gender']
+                    }],
                 },
             ],
             order: [["created_at", "DESC"]],
-            limit: parseInt(limit),
-            offset: parseInt(offset),
+        });
+
+        // Transform the response to match the required format
+        const transformedBookings = bookings.map(booking => {
+            // Check if booking is confirmed and batch date is in future
+            let displayStatus = booking.status;
+            if (booking.status === 'confirmed' && booking.batch) {
+                const batchStartDate = new Date(booking.batch.start_date);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset time part for accurate date comparison
+                
+                if (batchStartDate >= today) {
+                    displayStatus = 'upcoming';
+                }
+            }
+
+            return {
+                id: booking.id,
+                status: displayStatus,
+                trek: booking.trek,
+                vendor: {
+                    id: booking.vendor.id,
+                    name: booking.vendor.user ? booking.vendor.user.name : 'Unknown Vendor'
+                },
+                batch: booking.batch,
+                travelers: booking.travelers.map(bt => ({
+                    id: bt.traveler.id,
+                    name: bt.traveler.name,
+                    age: bt.traveler.age,
+                    gender: bt.traveler.gender
+                }))
+            };
         });
 
         res.json({
             success: true,
             data: {
-                bookings,
-                pagination: {
-                    currentPage: parseInt(page),
-                    totalPages: Math.ceil(count / limit),
-                    totalBookings: count,
-                    hasNext: offset + bookings.length < count,
-                    hasPrev: page > 1,
-                },
-            },
+                bookings: transformedBookings
+            }
         });
     } catch (error) {
         console.error("Error fetching customer bookings:", error);
         res.status(500).json({
             success: false,
-            message: "Failed to fetch bookings",
+            message: "Failed to fetch bookings"
         });
     }
 };
