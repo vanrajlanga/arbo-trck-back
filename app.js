@@ -13,6 +13,9 @@ try {
     console.error("Failed to initialize Firebase:", error);
 }
 
+// Import logging middleware
+const { loggingMiddleware, errorLoggingMiddleware } = require("./middleware/loggingMiddleware");
+
 // Import routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -41,6 +44,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(loggingMiddleware); // Add comprehensive logging
 app.use(morgan("dev"));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -132,6 +136,7 @@ app.get("/api", (req, res) => {
 });
 
 // Error handling
+app.use(errorLoggingMiddleware); // Add error logging
 app.use((err, req, res, next) => {
     console.error(err);
     res.status(500).json({
