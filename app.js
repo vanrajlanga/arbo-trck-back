@@ -13,6 +13,79 @@ try {
     console.error("Failed to initialize Firebase:", error);
 }
 
+// Test database connection
+const testDatabaseConnection = async () => {
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Ensure logs directory exists
+    const logsDir = path.join(__dirname, 'logs');
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+    }
+    
+    // Create database log stream
+    const dbLogStream = fs.createWriteStream(path.join(logsDir, 'database.log'), { flags: 'a' });
+    
+    const logToFile = (message) => {
+        const timestamp = new Date().toISOString();
+        const logEntry = `[${timestamp}] ${message}\n`;
+        dbLogStream.write(logEntry);
+        console.log(message);
+    };
+    
+    try {
+        await sequelize.authenticate();
+        logToFile('✅ Database connection has been established successfully.');
+        
+        // Test a simple query
+        const result = await sequelize.query('SELECT 1 as test');
+        logToFile('✅ Database query test successful: ' + JSON.stringify(result[0][0]));
+        
+        // Log database configuration (without sensitive data)
+        logToFile('📊 Database Configuration:');
+        logToFile(`   Host: ${process.env.DB_HOST}`);
+        logToFile(`   Database: ${process.env.DB_NAME}`);
+        logToFile(`   User: ${process.env.DB_USER}`);
+        logToFile(`   NODE_ENV: ${process.env.NODE_ENV}`);
+        
+    } catch (error) {
+        logToFile('❌ Unable to connect to the database: ' + error.message);
+        logToFile('📊 Database configuration:');
+        logToFile(`   Host: ${process.env.DB_HOST}`);
+        logToFile(`   Database: ${process.env.DB_NAME}`);
+        logToFile(`   User: ${process.env.DB_USER}`);
+        logToFile(`   NODE_ENV: ${process.env.NODE_ENV}`);
+        
+        // Provide helpful error messages
+        if (error.message.includes('No database selected')) {
+            logToFile('💡 Solution: Check if the database exists and the user has access to it.');
+            logToFile('💡 Try: CREATE DATABASE IF NOT EXISTS aorbo_trekking;');
+        } else if (error.message.includes('Access denied')) {
+            logToFile('💡 Solution: Check database username and password.');
+        } else if (error.message.includes('ECONNREFUSED')) {
+            logToFile('💡 Solution: Check if MySQL server is running and accessible.');
+        }
+        
+        // Log full error details
+        logToFile('🔍 Full error details:');
+        logToFile(error.stack);
+        
+        // Exit if database connection fails in production
+        if (process.env.NODE_ENV === 'production') {
+            logToFile('🚨 Exiting due to database connection failure in production');
+            dbLogStream.end();
+            process.exit(1);
+        }
+    }
+    
+    // Close the log stream
+    dbLogStream.end();
+};
+
+// Test database connection on startup
+testDatabaseConnection();
+
 // Import logging middleware
 const { loggingMiddleware, errorLoggingMiddleware } = require("./middleware/loggingMiddleware");
 
