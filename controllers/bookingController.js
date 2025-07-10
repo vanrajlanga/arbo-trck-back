@@ -1673,7 +1673,7 @@ const createMobileTrekOrder = async (req, res) => {
 
     let totalAmount = baseAmount * travelers.length;
     let discountAmount = 0;
-
+    
     // Apply coupon if provided
     if (couponCode) {
       const coupon = await Coupon.findOne({
@@ -1750,7 +1750,7 @@ const verifyMobilePayment = async (req, res) => {
       signature,
       trekId,
       travelers,
-      pickupPointId,
+      batchId,
       couponCode,
       specialRequests,
     } = req.body;
@@ -1846,7 +1846,7 @@ const verifyMobilePayment = async (req, res) => {
       customer_id: customerId,
       trek_id: trekId,
       vendor_id: trek.vendor_id,
-      pickup_point_id: pickupPointId,
+      batch_id: batchId,
       coupon_id: couponId,
       total_travelers: travelers.length,
       total_amount: totalAmount,
