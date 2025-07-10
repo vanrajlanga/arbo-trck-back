@@ -86,6 +86,58 @@ const testDatabaseConnection = async () => {
 // Test database connection on startup
 testDatabaseConnection();
 
+// Global error handlers for unhandled errors
+process.on('uncaughtException', (error) => {
+    const fs = require('fs');
+    const path = require('path');
+    const logsDir = path.join(__dirname, 'logs');
+    const errorLogPath = path.join(logsDir, 'errors.log');
+    
+    const errorLog = {
+        timestamp: new Date().toISOString(),
+        type: 'uncaughtException',
+        error: {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        }
+    };
+    
+    fs.appendFileSync(errorLogPath, JSON.stringify(errorLog, null, 2) + '\n');
+    console.error('🚨 Uncaught Exception:', error.message);
+    console.error(error.stack);
+    
+    // Exit in production
+    if (process.env.NODE_ENV === 'production') {
+        process.exit(1);
+    }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    const fs = require('fs');
+    const path = require('path');
+    const logsDir = path.join(__dirname, 'logs');
+    const errorLogPath = path.join(logsDir, 'errors.log');
+    
+    const errorLog = {
+        timestamp: new Date().toISOString(),
+        type: 'unhandledRejection',
+        error: {
+            message: reason?.message || String(reason),
+            stack: reason?.stack,
+            name: reason?.name
+        }
+    };
+    
+    fs.appendFileSync(errorLogPath, JSON.stringify(errorLog, null, 2) + '\n');
+    console.error('🚨 Unhandled Rejection:', reason);
+    
+    // Exit in production
+    if (process.env.NODE_ENV === 'production') {
+        process.exit(1);
+    }
+});
+
 // Import logging middleware
 const { loggingMiddleware, errorLoggingMiddleware } = require("./middleware/loggingMiddleware");
 
@@ -210,8 +262,47 @@ app.get("/api", (req, res) => {
 
 // Error handling
 app.use(errorLoggingMiddleware); // Add error logging
+
+// Global error handler to catch all unhandled errors
 app.use((err, req, res, next) => {
-    console.error(err);
+    // Log the error to the appropriate log file
+    const fs = require('fs');
+    const path = require('path');
+    const logsDir = path.join(__dirname, 'logs');
+    const errorLogPath = path.join(logsDir, 'errors.log');
+    
+    const errorLog = {
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        url: req.originalUrl || req.url,
+        ip: req.ip || req.connection.remoteAddress,
+        userId: req.user?.id || req.customer?.id || 'Anonymous',
+        userType: req.user ? 'user' : req.customer ? 'customer' : 'anonymous',
+        error: {
+            message: err.message,
+            stack: err.stack,
+            name: err.name
+        },
+        requestBody: req.body,
+        requestHeaders: {
+            'content-type': req.headers['content-type'],
+            'authorization': req.headers.authorization ? 'Bearer [HIDDEN]' : undefined,
+            'user-agent': req.headers['user-agent']
+        },
+        queryParams: req.query,
+        params: req.params
+    };
+    
+    // Write to error log file
+    fs.appendFileSync(errorLogPath, JSON.stringify(errorLog, null, 2) + '\n');
+    
+    // Log to console in development
+    if (process.env.NODE_ENV === 'development') {
+        console.error('🚨 Unhandled Error:', err.message);
+        console.error('Stack:', err.stack);
+    }
+    
+    // Send error response
     res.status(500).json({
         message: "Internal Server Error",
         error: process.env.NODE_ENV === "development" ? err.message : undefined,
