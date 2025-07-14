@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const bookingController = require("../../controllers/bookingController");
+const bookingController = require("../../controllers/vendor/bookingController");
 
 // Vendor booking routes
 router.get("/", bookingController.getVendorBookings);
@@ -8,7 +8,6 @@ router.get("/analytics", bookingController.getVendorBookingAnalytics);
 router.get("/:id", bookingController.getBookingById);
 router.post("/", bookingController.createVendorBooking);
 router.patch("/:id/status", bookingController.updateBookingStatus);
-router.get("/:id/participants", bookingController.getBookingParticipants);
 
 // Razorpay payment routes
 router.post("/create-trek-order", bookingController.createTrekOrder);

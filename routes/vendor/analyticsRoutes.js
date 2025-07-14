@@ -1,20 +1,20 @@
 const express = require("express");
 const router = express.Router();
-// Note: You'll need to create vendor-specific analytics methods
-// const analyticsController = require("../../controllers/analyticsController");
+const analyticsController = require("../../controllers/vendor/analyticsController");
+const authMiddleware = require("../../middleware/authMiddleware");
 
 // Vendor analytics routes
-router.get("/dashboard", (req, res) => {
-    res.json({
-        message: "Vendor dashboard analytics endpoint - to be implemented",
-    });
-});
+router.get(
+    "/dashboard",
+    authMiddleware,
+    analyticsController.getVendorDashboard
+);
 
-router.get("/bookings", (req, res) => {
-    res.json({
-        message: "Vendor booking analytics endpoint - to be implemented",
-    });
-});
+router.get(
+    "/bookings",
+    authMiddleware,
+    analyticsController.getVendorBookingAnalytics
+);
 
 router.get("/revenue", (req, res) => {
     res.json({

@@ -3,6 +3,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
 const { sequelize } = require("./models");
+const { handleSequelizeErrors } = require("./middleware/validationMiddleware");
 require("dotenv").config();
 
 // Initialize Firebase
@@ -12,14 +13,6 @@ try {
 } catch (error) {
     console.error("Failed to initialize Firebase:", error);
 }
-
-// Import routes
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const vendorRoutes = require("./routes/vendorRoutes");
-const trekRoutes = require("./routes/trekRoutes");
-const locationRoutes = require("./routes/locationRoutes");
-const bookingRoutes = require("./routes/v1/bookingRoutes");
 
 // Import v1 routes (for mobile app)
 const v1Routes = require("./routes/v1");
@@ -62,12 +55,8 @@ app.use("/api/vendor", vendorPanelRoutes);
 app.use("/api/v1", v1Routes);
 
 // LEGACY ROUTES (maintain backward compatibility)
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/vendors", vendorRoutes);
-app.use("/api/bookings", bookingRoutes);
-app.use("/api", trekRoutes);
-app.use("/api", locationRoutes);
+// Note: Legacy routes have been moved to organized structure
+// Use /api/admin, /api/vendor, or /api/v1 endpoints instead
 
 // Health check
 app.get("/health", (req, res) =>
@@ -88,15 +77,7 @@ app.get("/api", (req, res) => {
             admin: {
                 base: "/api/admin",
                 description: "Admin panel endpoints",
-                auth: "/api/admin/auth",
-                users: "/api/admin/users",
-                vendors: "/api/admin/vendors",
-                treks: "/api/admin/treks",
-                locations: "/api/admin/locations",
-                bookings: "/api/admin/bookings",
-                customers: "/api/admin/customers",
-                analytics: "/api/admin/analytics",
-                system: "/api/admin/system",
+                activities: "/api/admin/activities",
             },
             vendor: {
                 base: "/api/vendor",
@@ -111,33 +92,47 @@ app.get("/api", (req, res) => {
             v1: {
                 base: "/api/v1",
                 description: "Mobile app endpoints",
-                auth: "/api/v1/auth",
                 customer_auth: "/api/v1/customer/auth",
                 customer_bookings: "/api/v1/customer/bookings",
                 travelers: "/api/v1/customer/travelers",
                 treks: "/api/v1/treks",
-                destinations: "/api/v1/destinations",
-                locations: "/api/v1/locations",
-                bookings: "/api/v1/bookings",
             },
             legacy: {
-                description: "Legacy endpoints (deprecated)",
-                auth: "/api/auth",
-                users: "/api/users",
-                vendors: "/api/vendors",
-                bookings: "/api/bookings",
-                treks: "/api/vendor/treks, /api/admin/treks",
-                locations: "/api/states, /api/cities",
+                description:
+                    "Legacy endpoints have been moved to organized structure",
+                note: "Use /api/vendor or /api/v1 endpoints instead",
             },
         },
         documentation: "https://your-docs-url.com",
     });
 });
 
-// Error handling
+// Enhanced error handling middleware
+app.use(handleSequelizeErrors);
+
+// General error handling
 app.use((err, req, res, next) => {
-    console.error(err);
+    console.error("Error:", err);
+
+    // Handle specific error types
+    if (err.name === "ValidationError") {
+        return res.status(400).json({
+            success: false,
+            message: "Validation failed",
+            errors: err.errors,
+        });
+    }
+
+    if (err.name === "UnauthorizedError") {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized access",
+        });
+    }
+
+    // Default error response
     res.status(500).json({
+        success: false,
         message: "Internal Server Error",
         error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
@@ -146,14 +141,9 @@ app.use((err, req, res, next) => {
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({
+        success: false,
         message: "Route not found",
-        availableRoutes: [
-            "/api/admin",
-            "/api/vendor",
-            "/api/v1",
-            "/api",
-            "/health",
-        ],
+        availableRoutes: ["/api/vendor", "/api/v1", "/api", "/health"],
     });
 });
 

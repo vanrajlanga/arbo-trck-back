@@ -25,51 +25,6 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.ENUM("male", "female", "other"),
                 allowNull: false,
             },
-            phone: {
-                type: DataTypes.STRING(20),
-                allowNull: true, // Optional, traveler might not have own phone
-            },
-            email: {
-                type: DataTypes.STRING,
-                allowNull: true,
-                validate: {
-                    isEmail: true,
-                },
-            },
-            emergency_contact_name: {
-                type: DataTypes.STRING(100),
-                allowNull: true,
-            },
-            emergency_contact_phone: {
-                type: DataTypes.STRING(20),
-                allowNull: true,
-            },
-            emergency_contact_relation: {
-                type: DataTypes.STRING(50),
-                allowNull: true,
-            },
-            medical_conditions: {
-                type: DataTypes.TEXT,
-                allowNull: true,
-            },
-            dietary_restrictions: {
-                type: DataTypes.TEXT,
-                allowNull: true,
-            },
-            id_proof_type: {
-                type: DataTypes.ENUM(
-                    "passport",
-                    "driving_license",
-                    "aadhar",
-                    "voter_id",
-                    "other"
-                ),
-                allowNull: true,
-            },
-            id_proof_number: {
-                type: DataTypes.STRING(50),
-                allowNull: true,
-            },
             is_active: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true,

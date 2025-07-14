@@ -1,13 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const {
-    getTravelers,
-    createTraveler,
-    getTravelerDetails,
-    updateTraveler,
-    deleteTraveler,
-    getTravelerBookings,
-} = require("../../controllers/travelerController");
+const travelerController = require("../../controllers/v1/travelerController");
 const {
     authenticateCustomer,
 } = require("../../middleware/customerAuthMiddleware");
@@ -15,11 +8,11 @@ const {
 // All routes require customer authentication
 router.use(authenticateCustomer);
 
-router.get("/", getTravelers);
-router.post("/", createTraveler);
-router.get("/:id", getTravelerDetails);
-router.put("/:id", updateTraveler);
-router.delete("/:id", deleteTraveler);
-router.get("/:id/bookings", getTravelerBookings);
+router.get("/", travelerController.getTravelers);
+router.post("/", travelerController.createTraveler);
+router.get("/:id", travelerController.getTravelerDetails);
+router.put("/:id", travelerController.updateTraveler);
+router.delete("/:id", travelerController.deleteTraveler);
+router.get("/:id/bookings", travelerController.getTravelerBookings);
 
 module.exports = router;

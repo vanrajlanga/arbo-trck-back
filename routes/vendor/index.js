@@ -12,12 +12,15 @@ const stateRoutes = require("./stateRoutes");
 const analyticsRoutes = require("./analyticsRoutes");
 const destinationRoutes = require("./destinationRoutes");
 const couponRoutes = require("./couponRoutes");
+const activityRoutes = require("./activityRoutes");
 
-// Apply auth middleware to all vendor routes
+// Mount /auth routes (public: login/register)
+router.use("/auth", authRoutes);
+
+// Apply auth middleware to all other vendor routes
 router.use(authMiddleware);
 
-// Mount vendor routes
-router.use("/auth", authRoutes);
+// Mount protected vendor routes
 router.use("/treks", trekRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/customers", customerRoutes);
@@ -26,6 +29,7 @@ router.use("/states", stateRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/destinations", destinationRoutes);
 router.use("/coupons", couponRoutes);
+router.use("/activities", activityRoutes);
 
 // Vendor API info
 router.get("/", (req, res) => {
@@ -42,7 +46,8 @@ router.get("/", (req, res) => {
             analytics: "/api/vendor/analytics",
             destinations: "/api/vendor/destinations",
         },
-        authentication: "JWT token required for all endpoints",
+        authentication:
+            "JWT token required for all endpoints except /auth/login and /auth/register",
     });
 });
 

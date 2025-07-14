@@ -1,20 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const {
-    getAllStates,
-    getStateById,
-    getPopularStates,
-    getStatesByRegion,
-} = require("../../controllers/stateController");
+const stateController = require("../../controllers/vendor/stateController");
 const authMiddleware = require("../../middleware/authMiddleware");
 
 // All routes require authentication
 router.use(authMiddleware);
 
 // Vendor state routes (read-only)
-router.get("/", getAllStates);
-router.get("/popular", getPopularStates);
-router.get("/region/:region", getStatesByRegion);
-router.get("/:id", getStateById);
+router.get("/", stateController.getAllStates);
+router.get("/popular", stateController.getPopularStates);
+router.get("/region/:region", stateController.getStatesByRegion);
+router.get("/:id", stateController.getStateById);
 
 module.exports = router;

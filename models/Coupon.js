@@ -7,6 +7,17 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
                 autoIncrement: true,
             },
+            title: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                comment: "Display title for the coupon",
+            },
+            color: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: "#3B82F6",
+                comment: "Hex color code for UI display",
+            },
             code: { type: DataTypes.STRING, allowNull: false },
             description: { type: DataTypes.STRING, allowNull: true },
             discount_type: {
@@ -38,11 +49,11 @@ module.exports = (sequelize, DataTypes) => {
     );
 
     Coupon.associate = (models) => {
-        Coupon.belongsToMany(models.User, {
+        Coupon.belongsToMany(models.Customer, {
             through: models.CouponAssignment,
             foreignKey: "coupon_id",
-            otherKey: "user_id",
-            as: "users",
+            otherKey: "customer_id",
+            as: "customers",
         });
     };
 

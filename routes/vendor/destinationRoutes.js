@@ -1,38 +1,30 @@
 const express = require("express");
 const router = express.Router();
-const {
-    getAllDestinations,
-    getDestinationById,
-    createDestination,
-    updateDestination,
-    deleteDestination,
-    togglePopularity,
-    getPopularDestinations,
-} = require("../../controllers/destinationController");
+const destinationController = require("../../controllers/vendor/destinationController");
 const authMiddleware = require("../../middleware/authMiddleware");
 
 // All routes require authentication
 router.use(authMiddleware);
 
 // Get all destinations (for dropdowns)
-router.get("/", getAllDestinations);
+router.get("/", destinationController.getAllDestinations);
 
 // Get popular destinations
-router.get("/popular", getPopularDestinations);
+router.get("/popular", destinationController.getPopularDestinations);
 
 // Get destination by ID
-router.get("/:id", getDestinationById);
+router.get("/:id", destinationController.getDestinationById);
 
 // Create new destination
-router.post("/", createDestination);
+router.post("/", destinationController.createDestination);
 
 // Update destination
-router.put("/:id", updateDestination);
+router.put("/:id", destinationController.updateDestination);
 
 // Delete destination
-router.delete("/:id", deleteDestination);
+router.delete("/:id", destinationController.deleteDestination);
 
 // Toggle destination popularity
-router.patch("/:id/toggle-popularity", togglePopularity);
+router.patch("/:id/toggle-popularity", destinationController.togglePopularity);
 
 module.exports = router;

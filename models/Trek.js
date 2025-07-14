@@ -191,7 +191,13 @@ module.exports = (sequelize, DataTypes) => {
                     }
                     return [];
                 },
-                comment: "JSON array of trek activities",
+                comment: "JSON array of activity IDs from activities table",
+            },
+            badge_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: { model: "badges", key: "id" },
+                comment: "Optional badge associated with this trek",
             },
         },
         {
@@ -255,6 +261,10 @@ module.exports = (sequelize, DataTypes) => {
         Trek.hasMany(models.Rating, {
             foreignKey: "trek_id",
             as: "ratings",
+        });
+        Trek.belongsTo(models.Badge, {
+            foreignKey: "badge_id",
+            as: "badge",
         });
     };
 

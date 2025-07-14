@@ -1,19 +1,54 @@
 "use strict";
 
-const {
-    Trek,
-    Vendor,
-    Destination,
-    City,
-    Batch,
-    RatingCategory,
-    Review,
-    Rating,
-    Customer,
-} = require("../models");
+const { Trek, Vendor, Destination, City, Activity } = require("../models");
 
 const seedTreks = async () => {
     try {
+        // Check if required data exists
+        const vendors = await Vendor.findAll({ limit: 5 });
+        const destinations = await Destination.findAll();
+        const cities = await City.findAll();
+        const activities = await Activity.findAll();
+
+        console.log(
+            `Found ${vendors.length} vendors, ${destinations.length} destinations, ${cities.length} cities, ${activities.length} activities`
+        );
+
+        if (
+            vendors.length === 0 ||
+            destinations.length === 0 ||
+            cities.length === 0 ||
+            activities.length === 0
+        ) {
+            console.log(
+                "Required data not found. Please run vendors, destinations, cities, and activities seeders first."
+            );
+            return;
+        }
+
+        // Create a mapping of activity names to IDs
+        const activityMap = {};
+        activities.forEach((activity) => {
+            activityMap[activity.name] = activity.id;
+        });
+
+        // Debug: Check if we have enough data for the treks array
+        if (vendors.length < 5) {
+            console.log(
+                `Warning: Only ${vendors.length} vendors found, but treks array expects at least 5`
+            );
+        }
+        if (destinations.length < 11) {
+            console.log(
+                `Warning: Only ${destinations.length} destinations found, but treks array expects at least 11`
+            );
+        }
+        if (cities.length < 8) {
+            console.log(
+                `Warning: Only ${cities.length} cities found, but treks array expects at least 8`
+            );
+        }
+
         // Check if treks already exist
         const existingTreks = await Trek.findAll();
         if (existingTreks.length > 0) {
@@ -21,89 +56,68 @@ const seedTreks = async () => {
             return;
         }
 
-        // Get all vendors, destinations, and cities to reference them properly
-        const vendors = await Vendor.findAll();
-        const destinations = await Destination.findAll();
-        const cities = await City.findAll();
-        const customers = await Customer.findAll();
-
-        if (vendors.length === 0) {
-            console.log("No vendors found. Please run vendor seeder first.");
-            return;
-        }
-
-        if (customers.length === 0) {
-            console.log(
-                "No customers found. Please run customer seeder first."
-            );
-            return;
-        }
-
-        const vendorMap = {};
-        vendors.forEach((vendor) => {
-            vendorMap[vendor.id] = vendor.id;
-        });
-
-        const destinationMap = {};
-        destinations.forEach((dest) => {
-            destinationMap[dest.name] = dest.id;
-        });
-
-        const cityMap = {};
-        cities.forEach((city) => {
-            cityMap[city.cityName] = city.id;
-        });
-
-        const customerMap = {};
-        customers.forEach((customer) => {
-            customerMap[customer.id] = customer.id;
-        });
-
         const treks = [
-            // Uttarakhand Treks
             {
                 title: "Valley of Flowers Trek",
                 description:
-                    "Experience the magical Valley of Flowers, a UNESCO World Heritage site with vibrant alpine flowers and stunning Himalayan views. This moderate trek takes you through beautiful meadows and offers breathtaking views of the surrounding peaks.",
+                    "Experience the magical Valley of Flowers, a UNESCO World Heritage Site. This moderate trek takes you through vibrant meadows filled with rare Himalayan flowers, cascading waterfalls, and breathtaking mountain views. Perfect for nature lovers and photography enthusiasts.",
                 vendor_id: vendors[0].id,
-                destination_id: destinationMap["Valley of Flowers"],
-                city_id: cityMap["Dehradun"],
+                destination_id: destinations[0].id,
+                city_id: cities[0].id,
                 duration: "6 Days / 5 Nights",
                 duration_days: 6,
                 duration_nights: 5,
+                base_price: 14999,
                 difficulty: "moderate",
                 trek_type: "mountain",
-                category: "Flower Valley Trek",
-                base_price: 15999.0,
+                category: "Flower Valley",
+                status: "active",
                 meeting_point: "Dehradun Railway Station",
-                meeting_time: "08:00 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in tents and guesthouses",
+                meeting_time: "06:00",
+                inclusions: [
+                    "Accommodation in guesthouses and camps",
                     "All meals (breakfast, lunch, dinner)",
-                    "Transport from Dehradun to base camp",
                     "Experienced trek guide",
-                    "First aid kit",
-                    "Permits and entry fees",
-                ]),
-                exclusions: JSON.stringify([
+                    "Transport from Dehradun to base camp",
+                    "Trekking permits and fees",
+                    "First aid kit and safety equipment",
+                    "Camping equipment (tents, sleeping bags)",
+                ],
+                exclusions: [
                     "Personal expenses",
                     "Travel insurance",
-                    "Any additional food items",
+                    "Any additional activities",
                     "Tips for guides and porters",
-                ]),
-                status: "active",
-                discount_value: 10.0,
-                discount_type: "percentage",
-                has_discount: true,
-                cancellation_policies: JSON.stringify([
+                    "Personal trekking gear",
+                ],
+                activities: [
+                    activityMap["Photography"] || 1,
+                    activityMap["Bird Watching"] || 2,
+                    activityMap["Village Visit"] || 3,
+                    activityMap["Local Cuisine"] || 4,
+                ],
+                cancellation_policies: [
                     {
                         title: "Cancellation Policy",
                         description:
-                            "Standard cancellation terms and conditions",
+                            "Standard cancellation terms for Valley of Flowers Trek",
                         rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
+                            {
+                                rule: "Cancellation 30+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 15-29 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 7-14 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 7 days",
+                                deduction: "100%",
+                            },
                         ],
                         descriptionPoints: [
                             "Cancellation must be made in writing",
@@ -111,1216 +125,782 @@ const seedTreks = async () => {
                             "Force majeure events may affect cancellation terms",
                         ],
                     },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Dehradun",
-                            "Briefing session",
-                            "Equipment check",
-                            "Acclimatization walk",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Drive to Govindghat",
-                            "Trek to Ghangaria",
-                            "Camp setup",
-                            "Evening briefing",
-                        ],
-                    },
-                    {
-                        day: 3,
-                        activities: [
-                            "Trek to Valley of Flowers",
-                            "Flower photography",
-                            "Nature walk",
-                            "Return to camp",
-                        ],
-                    },
-                ]),
+                ],
+                other_policies: [],
             },
             {
                 title: "Kedarnath Temple Trek",
                 description:
-                    "Embark on a spiritual journey to the sacred Kedarnath Temple, one of the Char Dham pilgrimage sites. This trek combines religious significance with natural beauty as you traverse through the Garhwal Himalayas.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Kedarnath Temple"],
-                city_id: cityMap["Dehradun"],
-                duration: "5 Days / 4 Nights",
-                duration_days: 5,
-                duration_nights: 4,
-                difficulty: "moderate",
+                    "Embark on a spiritual journey to the sacred Kedarnath Temple, one of the Char Dham pilgrimage sites. This challenging trek combines religious significance with stunning Himalayan landscapes, ancient temples, and the powerful Mandakini River.",
+                vendor_id: vendors[1].id,
+                destination_id: destinations[1].id,
+                city_id: cities[1].id,
+                duration: "8 Days / 7 Nights",
+                duration_days: 8,
+                duration_nights: 7,
+                base_price: 19999,
+                difficulty: "difficult",
                 trek_type: "mountain",
-                category: "Pilgrimage Trek",
-                base_price: 12999.0,
-                meeting_point: "Haridwar Bus Stand",
-                meeting_time: "07:00 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in guesthouses",
-                    "Vegetarian meals",
-                    "Transport from Haridwar",
-                    "Temple darshan arrangements",
-                    "Experienced guide",
-                    "Basic medical support",
-                ]),
-                exclusions: JSON.stringify([
+                category: "Pilgrimage",
+                status: "active",
+                meeting_point: "Haridwar Railway Station",
+                meeting_time: "07:00",
+                inclusions: [
+                    "Accommodation in guesthouses and dharamshalas",
+                    "Vegetarian meals (breakfast, lunch, dinner)",
+                    "Experienced trek guide",
+                    "Transport from Haridwar to base camp",
+                    "Temple visit permits",
+                    "First aid kit and safety equipment",
+                    "Porter services for luggage",
+                ],
+                exclusions: [
                     "Personal expenses",
                     "Travel insurance",
-                    "Additional food items",
-                    "Donations at temple",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
+                    "Temple offerings and donations",
+                    "Tips for guides and porters",
+                    "Personal trekking gear",
+                ],
+                activities: [
+                    activityMap["Photography"] || 1,
+                    activityMap["Meditation"] || 2,
+                    activityMap["Yoga"] || 3,
+                    activityMap["Village Visit"] || 4,
+                    activityMap["Local Cuisine"] || 5,
+                ],
+                cancellation_policies: [
                     {
                         title: "Cancellation Policy",
                         description:
-                            "Standard cancellation terms and conditions",
+                            "Special cancellation terms for Kedarnath Trek",
                         rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
+                            {
+                                rule: "Cancellation 45+ days before",
+                                deduction: "5%",
+                            },
+                            {
+                                rule: "Cancellation 30-44 days before",
+                                deduction: "15%",
+                            },
+                            {
+                                rule: "Cancellation 15-29 days before",
+                                deduction: "30%",
+                            },
+                            {
+                                rule: "Cancellation less than 15 days",
+                                deduction: "100%",
+                            },
                         ],
                         descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
+                            "Special terms for religious pilgrimage",
+                            "Refunds processed within 7-10 business days",
+                            "Weather conditions may affect trek schedule",
                         ],
                     },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Haridwar",
-                            "Ganga Aarti",
-                            "Briefing session",
-                            "Equipment check",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Drive to Gaurikund",
-                            "Trek to Kedarnath",
-                            "Temple visit",
-                            "Evening prayers",
-                        ],
-                    },
-                ]),
-            },
-            {
-                title: "Rishikesh Adventure Trek",
-                description:
-                    "Combine trekking with adventure sports in the adventure capital of India. This trek includes river rafting, rock climbing, and jungle trekking along the banks of the holy Ganges.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Rishikesh Adventure Hub"],
-                city_id: cityMap["Rishikesh"],
-                duration: "4 Days / 3 Nights",
-                duration_days: 4,
-                duration_nights: 3,
-                difficulty: "easy",
-                trek_type: "adventure",
-                category: "Adventure Trek",
-                base_price: 8999.0,
-                meeting_point: "Rishikesh Railway Station",
-                meeting_time: "09:00 AM",
-                inclusions: JSON.stringify([
-                    "River rafting experience",
-                    "Rock climbing session",
-                    "Jungle trekking",
-                    "Accommodation in camps",
-                    "All adventure equipment",
-                    "Experienced instructors",
-                ]),
-                exclusions: JSON.stringify([
-                    "Personal expenses",
-                    "Travel insurance",
-                    "Additional adventure activities",
-                    "Tips for instructors",
-                ]),
-                status: "active",
-                discount_value: 500.0,
-                discount_type: "fixed",
-                has_discount: true,
-                cancellation_policies: JSON.stringify([
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms and conditions",
-                        rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
-                        ],
-                    },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Rishikesh",
-                            "Safety briefing",
-                            "Equipment fitting",
-                            "Evening meditation",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "River rafting",
-                            "Rock climbing",
-                            "Adventure training",
-                            "Campfire dinner",
-                        ],
-                    },
-                ]),
-            },
-
-            // Himachal Pradesh Treks
-            {
-                title: "Solang Valley Trek",
-                description:
-                    "Explore the beautiful Solang Valley with its stunning landscapes and adventure activities. This trek offers a perfect blend of natural beauty and adventure sports in the heart of Himachal Pradesh.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Solang Valley"],
-                city_id: cityMap["Manali"],
-                duration: "5 Days / 4 Nights",
-                duration_days: 5,
-                duration_nights: 4,
-                difficulty: "easy",
-                trek_type: "hill-station",
-                category: "Valley Trek",
-                base_price: 11999.0,
-                meeting_point: "Manali Bus Stand",
-                meeting_time: "08:30 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in hotels and camps",
-                    "All meals",
-                    "Transport from Manali",
-                    "Adventure activities",
-                    "Experienced guide",
-                    "Safety equipment",
-                ]),
-                exclusions: JSON.stringify([
-                    "Personal expenses",
-                    "Travel insurance",
-                    "Additional activities",
-                    "Tips for guides",
-                ]),
-                status: "active",
-                discount_value: 15.0,
-                discount_type: "percentage",
-                has_discount: true,
-                cancellation_policies: JSON.stringify([
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms and conditions",
-                        rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
-                        ],
-                    },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Manali",
-                            "Local sightseeing",
-                            "Equipment briefing",
-                            "Acclimatization",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Drive to Solang Valley",
-                            "Adventure activities",
-                            "Mountain biking",
-                            "Camp setup",
-                        ],
-                    },
-                ]),
+                ],
+                other_policies: [],
             },
             {
                 title: "Triund Trek",
                 description:
-                    "A popular trek near Dharamshala offering panoramic views of the Dhauladhar range. This moderate trek is perfect for beginners and offers stunning sunset views from the top.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Triund Trek"],
-                city_id: cityMap["Dharamshala"],
+                    "Perfect for beginners, the Triund Trek offers spectacular views of the Dhauladhar Range and Kangra Valley. This easy-moderate trek features lush green meadows, panoramic mountain vistas, and a comfortable camping experience under the stars.",
+                vendor_id: vendors[2].id,
+                destination_id: destinations[2].id,
+                city_id: cities[2].id,
                 duration: "3 Days / 2 Nights",
                 duration_days: 3,
                 duration_nights: 2,
-                difficulty: "moderate",
+                base_price: 7999,
+                difficulty: "easy",
                 trek_type: "mountain",
-                category: "Mountain Trek",
-                base_price: 6999.0,
+                category: "Adventure",
+                status: "active",
                 meeting_point: "McLeod Ganj Bus Stand",
-                meeting_time: "09:00 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in tents",
-                    "All meals",
-                    "Transport from Dharamshala",
-                    "Experienced guide",
+                meeting_time: "08:00",
+                inclusions: [
+                    "Accommodation in camps",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced trek guide",
+                    "Transport from McLeod Ganj to base",
+                    "Trekking permits",
                     "Camping equipment",
-                    "First aid support",
-                ]),
-                exclusions: JSON.stringify([
+                    "Bonfire and music session",
+                ],
+                exclusions: [
                     "Personal expenses",
                     "Travel insurance",
-                    "Additional food items",
+                    "Any additional activities",
                     "Tips for guides",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
+                    "Personal trekking gear",
+                ],
+                activities: [
+                    activityMap["Photography"] || 1,
+                    activityMap["Stargazing"] || 2,
+                    activityMap["Bonfire"] || 3,
+                    activityMap["Local Cuisine"] || 4,
+                    activityMap["Meditation"] || 5,
+                ],
+                cancellation_policies: [
                     {
                         title: "Cancellation Policy",
                         description:
-                            "Standard cancellation terms and conditions",
+                            "Standard cancellation terms for Triund Trek",
                         rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
+                            {
+                                rule: "Cancellation 15+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 7-14 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 3-6 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 3 days",
+                                deduction: "100%",
+                            },
                         ],
                         descriptionPoints: [
                             "Cancellation must be made in writing",
                             "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
+                            "Weather conditions may affect trek schedule",
                         ],
                     },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at McLeod Ganj",
-                            "Briefing session",
-                            "Equipment check",
-                            "Local exploration",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Trek to Triund",
-                            "Sunset viewing",
-                            "Camping experience",
-                            "Stargazing",
-                        ],
-                    },
-                ]),
+                ],
+                other_policies: [],
             },
-
-            // Ladakh Treks
             {
                 title: "Pangong Lake Trek",
                 description:
-                    "Experience the magical Pangong Lake with its changing colors and stunning mountain backdrop. This high-altitude trek offers breathtaking views of the Ladakh landscape.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Pangong Lake"],
-                city_id: cityMap["Leh"],
-                duration: "7 Days / 6 Nights",
-                duration_days: 7,
-                duration_nights: 6,
-                difficulty: "difficult",
+                    "Experience the mesmerizing beauty of Pangong Lake, one of the highest saltwater lakes in the world. This extreme trek takes you through the rugged landscapes of Ladakh, offering stunning views of the lake's changing colors and surrounding peaks.",
+                vendor_id: vendors[3].id,
+                destination_id: destinations[3].id,
+                city_id: cities[3].id,
+                duration: "10 Days / 9 Nights",
+                duration_days: 10,
+                duration_nights: 9,
+                base_price: 29999,
+                difficulty: "extreme",
                 trek_type: "mountain",
-                category: "High Altitude Trek",
-                base_price: 24999.0,
+                category: "High Altitude",
+                status: "active",
                 meeting_point: "Leh Airport",
-                meeting_time: "10:00 AM",
-                inclusions: JSON.stringify([
+                meeting_time: "09:00",
+                inclusions: [
                     "Accommodation in camps and guesthouses",
-                    "All meals",
-                    "Transport from Leh",
-                    "Oxygen support",
-                    "Experienced high-altitude guide",
-                    "Medical support",
-                ]),
-                exclusions: JSON.stringify([
-                    "Flight tickets",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced high-altitude trek guide",
+                    "Transport from Leh to base camp",
+                    "Trekking permits and fees",
+                    "Oxygen cylinders and medical support",
+                    "Complete camping equipment",
+                    "Acclimatization support",
+                ],
+                exclusions: [
                     "Personal expenses",
                     "Travel insurance",
-                    "Additional medical expenses",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
+                    "Any additional activities",
+                    "Tips for guides and porters",
+                    "Personal trekking gear",
+                    "Flight tickets to Leh",
+                ],
+                activities: [
+                    activityMap["Trekking"] || 1,
+                    activityMap["Photography"] || 2,
+                    activityMap["Stargazing"] || 3,
+                    activityMap["Village Visit"] || 4,
+                    activityMap["Meditation"] || 5,
+                ],
+                cancellation_policies: [
                     {
                         title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms and conditions",
+                        description: "Special terms for high-altitude trek",
                         rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
+                            {
+                                rule: "Cancellation 60+ days before",
+                                deduction: "5%",
+                            },
+                            {
+                                rule: "Cancellation 30-59 days before",
+                                deduction: "15%",
+                            },
+                            {
+                                rule: "Cancellation 15-29 days before",
+                                deduction: "30%",
+                            },
+                            {
+                                rule: "Cancellation less than 15 days",
+                                deduction: "100%",
+                            },
                         ],
                         descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
+                            "Special terms for extreme altitude trek",
+                            "Medical fitness certificate required",
+                            "Weather and altitude may affect schedule",
                         ],
                     },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Leh",
-                            "Acclimatization",
-                            "Medical checkup",
-                            "Briefing session",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Drive to Pangong",
-                            "Lake exploration",
-                            "Photography session",
-                            "Camp setup",
-                        ],
-                    },
-                ]),
+                ],
+                other_policies: [],
             },
             {
                 title: "Khardungla Pass Trek",
                 description:
-                    "Trek to the world's highest motorable pass at 18,380 feet. This extreme trek offers unparalleled views of the Karakoram and Ladakh ranges.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Khardungla Pass"],
-                city_id: cityMap["Leh"],
-                duration: "8 Days / 7 Nights",
-                duration_days: 8,
-                duration_nights: 7,
+                    "Challenge yourself with the Khardungla Pass Trek, one of the highest motorable passes in the world. This extreme trek offers breathtaking views of the Karakoram Range and the Nubra Valley, making it a dream for adventure enthusiasts.",
+                vendor_id: vendors[3].id,
+                destination_id: destinations[4].id,
+                city_id: cities[3].id,
+                duration: "12 Days / 11 Nights",
+                duration_days: 12,
+                duration_nights: 11,
+                base_price: 34999,
                 difficulty: "extreme",
                 trek_type: "mountain",
-                category: "Extreme Trek",
-                base_price: 29999.0,
+                category: "Extreme",
+                status: "active",
                 meeting_point: "Leh Airport",
-                meeting_time: "09:00 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in camps",
-                    "All meals",
-                    "Transport from Leh",
-                    "Oxygen cylinders",
-                    "Experienced extreme trek guide",
-                    "Full medical support",
-                ]),
-                exclusions: JSON.stringify([
-                    "Flight tickets",
+                meeting_time: "08:00",
+                inclusions: [
+                    "Accommodation in camps and guesthouses",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced extreme altitude guide",
+                    "Transport from Leh to base camp",
+                    "Trekking permits and fees",
+                    "Oxygen cylinders and medical support",
+                    "Complete camping equipment",
+                    "Acclimatization program",
+                    "Safety equipment",
+                ],
+                exclusions: [
                     "Personal expenses",
                     "Travel insurance",
-                    "Additional medical expenses",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
+                    "Any additional activities",
+                    "Tips for guides and porters",
+                    "Personal trekking gear",
+                    "Flight tickets to Leh",
+                ],
+                activities: [
+                    activityMap["Trekking"] || 1,
+                    activityMap["Rock Climbing"] || 2,
+                    activityMap["Photography"] || 3,
+                    activityMap["Village Visit"] || 4,
+                    activityMap["Mountain Biking"] || 5,
+                ],
+                cancellation_policies: [
                     {
                         title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms and conditions",
+                        description: "Special terms for extreme altitude trek",
                         rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
+                            {
+                                rule: "Cancellation 90+ days before",
+                                deduction: "5%",
+                            },
+                            {
+                                rule: "Cancellation 60-89 days before",
+                                deduction: "15%",
+                            },
+                            {
+                                rule: "Cancellation 30-59 days before",
+                                deduction: "30%",
+                            },
+                            {
+                                rule: "Cancellation less than 30 days",
+                                deduction: "100%",
+                            },
                         ],
                         descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
+                            "Special terms for extreme altitude trek",
+                            "Medical fitness certificate mandatory",
+                            "Weather and altitude may affect schedule",
                         ],
                     },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Leh",
-                            "Medical assessment",
-                            "Equipment check",
-                            "Acclimatization",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Drive to Khardungla",
-                            "Altitude training",
-                            "Safety briefing",
-                            "Camp preparation",
-                        ],
-                    },
-                ]),
+                ],
+                other_policies: [],
             },
-
-            // Sikkim Treks
             {
                 title: "Yumthang Valley Trek",
                 description:
-                    "Explore the Valley of Flowers in North Sikkim with its rhododendron forests and hot springs. This trek offers a unique blend of natural beauty and cultural experiences.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Yumthang Valley"],
-                city_id: cityMap["Lachung"],
-                duration: "6 Days / 5 Nights",
-                duration_days: 6,
-                duration_nights: 5,
+                    "Discover the enchanting Yumthang Valley, known as the Valley of Flowers of Sikkim. This moderate trek takes you through rhododendron forests, hot springs, and offers stunning views of the snow-capped Himalayan peaks.",
+                vendor_id: vendors[4].id,
+                destination_id: destinations[5].id,
+                city_id: cities[4].id,
+                duration: "7 Days / 6 Nights",
+                duration_days: 7,
+                duration_nights: 6,
+                base_price: 17999,
                 difficulty: "moderate",
                 trek_type: "mountain",
-                category: "Valley Trek",
-                base_price: 18999.0,
+                category: "Valley",
+                status: "active",
                 meeting_point: "Gangtok Bus Stand",
-                meeting_time: "08:00 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in guesthouses",
-                    "All meals",
-                    "Transport from Gangtok",
-                    "Permits for North Sikkim",
-                    "Experienced guide",
-                    "Medical support",
-                ]),
-                exclusions: JSON.stringify([
+                meeting_time: "07:00",
+                inclusions: [
+                    "Accommodation in guesthouses and camps",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced trek guide",
+                    "Transport from Gangtok to base camp",
+                    "Trekking permits and fees",
+                    "First aid kit and safety equipment",
+                    "Camping equipment",
+                    "Hot spring visit",
+                ],
+                exclusions: [
                     "Personal expenses",
                     "Travel insurance",
-                    "Additional food items",
-                    "Tips for guides",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
+                    "Any additional activities",
+                    "Tips for guides and porters",
+                    "Personal trekking gear",
+                ],
+                activities: [
+                    activityMap["Photography"] || 1,
+                    activityMap["Camping"] || 2,
+                    activityMap["Bird Watching"] || 3,
+                    activityMap["Village Visit"] || 4,
+                    activityMap["Local Cuisine"] || 5,
+                ],
+                cancellation_policies: [
                     {
                         title: "Cancellation Policy",
                         description:
-                            "Standard cancellation terms and conditions",
+                            "Standard cancellation terms for Yumthang Trek",
                         rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
+                            {
+                                rule: "Cancellation 30+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 15-29 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 7-14 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 7 days",
+                                deduction: "100%",
+                            },
                         ],
                         descriptionPoints: [
                             "Cancellation must be made in writing",
                             "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
+                            "Weather conditions may affect trek schedule",
                         ],
                     },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Gangtok",
-                            "Permit processing",
-                            "Briefing session",
-                            "Local exploration",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Drive to Lachung",
-                            "Valley exploration",
-                            "Hot spring visit",
-                            "Cultural experience",
-                        ],
-                    },
-                ]),
+                ],
+                other_policies: [],
             },
-
-            // Maharashtra Treks
             {
-                title: "Lonavala Caves Trek",
+                title: "Rishikesh Adventure Trek",
                 description:
-                    "Explore the ancient Buddhist caves of Lonavala while trekking through the Western Ghats. This easy trek combines history, culture, and natural beauty.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Lonavala Caves"],
-                city_id: cityMap["Lonavala"],
-                duration: "2 Days / 1 Night",
-                duration_days: 2,
-                duration_nights: 1,
-                difficulty: "easy",
-                trek_type: "forest",
-                category: "Cave Trek",
-                base_price: 4999.0,
-                meeting_point: "Lonavala Railway Station",
-                meeting_time: "10:00 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in guesthouse",
-                    "All meals",
-                    "Transport from station",
-                    "Cave exploration guide",
-                    "Safety equipment",
-                    "Historical information",
-                ]),
-                exclusions: JSON.stringify([
-                    "Personal expenses",
-                    "Travel insurance",
-                    "Additional food items",
-                    "Tips for guides",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms and conditions",
-                        rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
-                        ],
-                    },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Lonavala",
-                            "Cave exploration",
-                            "Historical tour",
-                            "Local cuisine",
-                        ],
-                    },
-                ]),
-            },
-
-            // Karnataka Treks
-            {
-                title: "Mysore Palace Trek",
-                description:
-                    "A cultural trek exploring the magnificent Mysore Palace and surrounding heritage sites. This easy trek focuses on history and architecture rather than physical challenge.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Mysore Palace"],
-                city_id: cityMap["Mysore"],
-                duration: "3 Days / 2 Nights",
-                duration_days: 3,
-                duration_nights: 2,
-                difficulty: "easy",
-                trek_type: "hill-station",
-                category: "Cultural Trek",
-                base_price: 7999.0,
-                meeting_point: "Mysore Railway Station",
-                meeting_time: "09:00 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in heritage hotel",
-                    "All meals",
-                    "Palace entry fees",
-                    "Cultural guide",
-                    "Transport within city",
-                    "Historical information",
-                ]),
-                exclusions: JSON.stringify([
-                    "Personal expenses",
-                    "Travel insurance",
-                    "Additional food items",
-                    "Tips for guides",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms and conditions",
-                        rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
-                        ],
-                    },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
-                    {
-                        day: 1,
-                        activities: [
-                            "Arrival at Mysore",
-                            "Palace visit",
-                            "Cultural tour",
-                            "Evening light show",
-                        ],
-                    },
-                    {
-                        day: 2,
-                        activities: [
-                            "Heritage walk",
-                            "Local market visit",
-                            "Traditional dance",
-                            "Cultural workshop",
-                        ],
-                    },
-                ]),
-            },
-
-            // Kerala Treks
-            {
-                title: "Munnar Tea Gardens Trek",
-                description:
-                    "Trek through the rolling tea plantations of Munnar with their emerald green landscapes. This easy trek offers stunning views and insights into tea cultivation.",
-                vendor_id: vendors[0].id,
-                destination_id: destinationMap["Munnar Tea Gardens"],
-                city_id: cityMap["Munnar"],
+                    "Combine adventure with spirituality in Rishikesh, the Yoga Capital of the World. This easy trek includes river rafting, yoga sessions, temple visits, and camping by the Ganges River.",
+                vendor_id: vendors[2].id,
+                destination_id: destinations[6].id,
+                city_id: cities[2].id,
                 duration: "4 Days / 3 Nights",
                 duration_days: 4,
                 duration_nights: 3,
+                base_price: 9999,
                 difficulty: "easy",
-                trek_type: "hill-station",
-                category: "Tea Garden Trek",
-                base_price: 9999.0,
-                meeting_point: "Munnar Bus Stand",
-                meeting_time: "08:30 AM",
-                inclusions: JSON.stringify([
-                    "Accommodation in tea estate",
-                    "All meals",
-                    "Tea plantation tour",
-                    "Experienced guide",
-                    "Transport within Munnar",
-                    "Tea tasting session",
-                ]),
-                exclusions: JSON.stringify([
+                trek_type: "adventure",
+                category: "Adventure",
+                status: "active",
+                meeting_point: "Rishikesh Railway Station",
+                meeting_time: "08:00",
+                inclusions: [
+                    "Accommodation in camps and guesthouses",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced adventure guide",
+                    "River rafting equipment",
+                    "Yoga sessions",
+                    "Temple visits",
+                    "Transport within Rishikesh",
+                    "Safety equipment",
+                ],
+                exclusions: [
                     "Personal expenses",
                     "Travel insurance",
-                    "Additional food items",
+                    "Any additional activities",
                     "Tips for guides",
-                ]),
-                status: "active",
-                discount_value: 0.0,
-                discount_type: "percentage",
-                has_discount: false,
-                cancellation_policies: JSON.stringify([
+                    "Personal gear",
+                ],
+                activities: [
+                    activityMap["River Rafting"] || 1,
+                    activityMap["Yoga"] || 2,
+                    activityMap["Meditation"] || 3,
+                    activityMap["Village Visit"] || 4,
+                    activityMap["Local Cuisine"] || 5,
+                ],
+                cancellation_policies: [
                     {
                         title: "Cancellation Policy",
                         description:
-                            "Standard cancellation terms and conditions",
+                            "Standard cancellation terms for Rishikesh Adventure",
                         rules: [
-                            { rule: "Full refund", deduction: "0%" },
-                            { rule: "Partial refund", deduction: "50%" },
-                            { rule: "No refund", deduction: "100%" },
+                            {
+                                rule: "Cancellation 15+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 7-14 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 3-6 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 3 days",
+                                deduction: "100%",
+                            },
                         ],
                         descriptionPoints: [
                             "Cancellation must be made in writing",
                             "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
+                            "Weather conditions may affect activities",
                         ],
                     },
-                ]),
-                other_policies: JSON.stringify([]),
-                activities: JSON.stringify([
+                ],
+                other_policies: [],
+            },
+            {
+                title: "Solang Valley Trek",
+                description:
+                    "Experience the thrill of Solang Valley, a paradise for adventure sports. This moderate trek combines trekking with activities like paragliding, zorbing, and skiing (in winter), offering a perfect blend of adventure and natural beauty.",
+                vendor_id: vendors[1].id,
+                destination_id: destinations[7].id,
+                city_id: cities[1].id,
+                duration: "5 Days / 4 Nights",
+                duration_days: 5,
+                duration_nights: 4,
+                base_price: 12999,
+                difficulty: "moderate",
+                trek_type: "adventure",
+                category: "Adventure",
+                status: "active",
+                meeting_point: "Manali Bus Stand",
+                meeting_time: "08:30",
+                inclusions: [
+                    "Accommodation in guesthouses and camps",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced adventure guide",
+                    "Transport from Manali to Solang",
+                    "Adventure sports equipment",
+                    "Safety equipment and training",
+                    "Camping equipment",
+                ],
+                exclusions: [
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Additional adventure activities",
+                    "Tips for guides",
+                    "Personal gear",
+                ],
+                activities: [
+                    activityMap["Trekking"] || 1,
+                    activityMap["Photography"] || 2,
+                    activityMap["Mountain Biking"] || 3,
+                    activityMap["Village Visit"] || 4,
+                    activityMap["Local Cuisine"] || 5,
+                ],
+                cancellation_policies: [
                     {
-                        day: 1,
-                        activities: [
-                            "Arrival at Munnar",
-                            "Tea estate tour",
-                            "Plantation walk",
-                            "Tea tasting",
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms for Solang Adventure",
+                        rules: [
+                            {
+                                rule: "Cancellation 20+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 10-19 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 5-9 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 5 days",
+                                deduction: "100%",
+                            },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Weather conditions may affect adventure activities",
                         ],
                     },
+                ],
+                other_policies: [],
+            },
+            {
+                title: "Mysore Palace Trek",
+                description:
+                    "Explore the cultural heritage of Karnataka with this unique trek that combines palace visits, historical monuments, and nature trails. Experience the grandeur of Mysore Palace and the surrounding Chamundi Hills.",
+                vendor_id: vendors[0].id,
+                destination_id: destinations[8].id,
+                city_id: cities[5].id,
+                duration: "3 Days / 2 Nights",
+                duration_days: 3,
+                duration_nights: 2,
+                base_price: 6999,
+                difficulty: "easy",
+                trek_type: "adventure",
+                category: "Cultural",
+                status: "active",
+                meeting_point: "Mysore Railway Station",
+                meeting_time: "09:00",
+                inclusions: [
+                    "Accommodation in heritage hotels",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced cultural guide",
+                    "Palace entry tickets",
+                    "Transport within Mysore",
+                    "Cultural activities",
+                    "Historical tour",
+                ],
+                exclusions: [
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Any additional activities",
+                    "Tips for guides",
+                    "Personal items",
+                ],
+                activities: [
+                    activityMap["Village Visit"] || 1,
+                    activityMap["Local Cuisine"] || 2,
+                    activityMap["Photography"] || 3,
+                    activityMap["Camping"] || 4,
+                ],
+                cancellation_policies: [
                     {
-                        day: 2,
-                        activities: [
-                            "Tea processing visit",
-                            "Garden trekking",
-                            "Local culture",
-                            "Sunset viewing",
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms for Cultural Trek",
+                        rules: [
+                            {
+                                rule: "Cancellation 15+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 7-14 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 3-6 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 3 days",
+                                deduction: "100%",
+                            },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Cultural events may affect schedule",
                         ],
                     },
-                ]),
+                ],
+                other_policies: [],
+            },
+            {
+                title: "Lonavala Caves Trek",
+                description:
+                    "Discover the ancient Buddhist caves and scenic beauty of Lonavala. This easy trek combines historical exploration with nature trails, offering stunning views of the Western Ghats and the Arabian Sea.",
+                vendor_id: vendors[0].id,
+                destination_id: destinations[9].id,
+                city_id: cities[6].id,
+                duration: "2 Days / 1 Night",
+                duration_days: 2,
+                duration_nights: 1,
+                base_price: 4999,
+                difficulty: "easy",
+                trek_type: "adventure",
+                category: "Cave Trek",
+                status: "active",
+                meeting_point: "Lonavala Railway Station",
+                meeting_time: "09:30",
+                inclusions: [
+                    "Accommodation in guesthouses",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced guide",
+                    "Cave entry permits",
+                    "Transport within Lonavala",
+                    "Safety equipment",
+                    "Historical tour",
+                ],
+                exclusions: [
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Any additional activities",
+                    "Tips for guides",
+                    "Personal items",
+                ],
+                activities: [
+                    activityMap["Photography"] || 1,
+                    activityMap["Village Visit"] || 2,
+                    activityMap["Local Cuisine"] || 3,
+                    activityMap["Camping"] || 4,
+                ],
+                cancellation_policies: [
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms for Cave Trek",
+                        rules: [
+                            {
+                                rule: "Cancellation 10+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 5-9 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 2-4 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 2 days",
+                                deduction: "100%",
+                            },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Weather conditions may affect cave visits",
+                        ],
+                    },
+                ],
+                other_policies: [],
+            },
+            {
+                title: "Munnar Tea Gardens Trek",
+                description:
+                    "Experience the serene beauty of Munnar's tea gardens and the Western Ghats. This easy trek takes you through rolling tea plantations, spice gardens, and offers breathtaking views of the Nilgiri Hills.",
+                vendor_id: vendors[4].id,
+                destination_id: destinations[9].id,
+                city_id: cities[7].id,
+                duration: "4 Days / 3 Nights",
+                duration_days: 4,
+                duration_nights: 3,
+                base_price: 8999,
+                difficulty: "easy",
+                trek_type: "forest",
+                category: "Tea Garden",
+                status: "active",
+                meeting_point: "Munnar Bus Stand",
+                meeting_time: "08:00",
+                inclusions: [
+                    "Accommodation in tea estate bungalows",
+                    "All meals (breakfast, lunch, dinner)",
+                    "Experienced nature guide",
+                    "Tea garden tours",
+                    "Transport within Munnar",
+                    "Spice garden visit",
+                    "Tea tasting sessions",
+                ],
+                exclusions: [
+                    "Personal expenses",
+                    "Travel insurance",
+                    "Any additional activities",
+                    "Tips for guides",
+                    "Personal items",
+                ],
+                activities: [
+                    activityMap["Photography"] || 1,
+                    activityMap["Local Cuisine"] || 2,
+                    activityMap["Village Visit"] || 3,
+                    activityMap["Camping"] || 4,
+                ],
+                cancellation_policies: [
+                    {
+                        title: "Cancellation Policy",
+                        description:
+                            "Standard cancellation terms for Tea Garden Trek",
+                        rules: [
+                            {
+                                rule: "Cancellation 15+ days before",
+                                deduction: "10%",
+                            },
+                            {
+                                rule: "Cancellation 7-14 days before",
+                                deduction: "25%",
+                            },
+                            {
+                                rule: "Cancellation 3-6 days before",
+                                deduction: "50%",
+                            },
+                            {
+                                rule: "Cancellation less than 3 days",
+                                deduction: "100%",
+                            },
+                        ],
+                        descriptionPoints: [
+                            "Cancellation must be made in writing",
+                            "Refunds processed within 5-7 business days",
+                            "Weather conditions may affect garden visits",
+                        ],
+                    },
+                ],
+                other_policies: [],
             },
         ];
 
-        await Trek.bulkCreate(treks);
+        // Patch treks array to use only valid indices for destinations and cities
+        const safeTreks = treks.map((trek) => {
+            let destIdx = destinations.findIndex(
+                (d) => d.id === trek.destination_id
+            );
+            let cityIdx = cities.findIndex((c) => c.id === trek.city_id);
+            // If out of bounds, use the last valid index
+            if (destIdx === -1 || destIdx > 9)
+                trek.destination_id = destinations[9].id;
+            if (cityIdx === -1 || cityIdx > 9) trek.city_id = cities[9].id;
+            return trek;
+        });
+        await Trek.bulkCreate(safeTreks);
+
         console.log("Treks seeded successfully!");
 
-        // Create batches for each trek
-        const createdTreks = await Trek.findAll();
-        const batchData = [];
-
-        // Valley of Flowers Trek batches
-        const valleyTrek = createdTreks.find(
-            (t) => t.title === "Valley of Flowers Trek"
-        );
-        if (valleyTrek) {
-            batchData.push(
-                {
-                    trek_id: valleyTrek.id,
-                    start_date: "2025-08-15",
-                    end_date: "2025-08-20",
-                    capacity: 15,
-                },
-                {
-                    trek_id: valleyTrek.id,
-                    start_date: "2025-09-10",
-                    end_date: "2025-09-15",
-                    capacity: 15,
-                },
-                {
-                    trek_id: valleyTrek.id,
-                    start_date: "2025-10-05",
-                    end_date: "2025-10-10",
-                    capacity: 15,
-                }
-            );
-        }
-
-        // Kedarnath Temple Trek batches
-        const kedarnathTrek = createdTreks.find(
-            (t) => t.title === "Kedarnath Temple Trek"
-        );
-        if (kedarnathTrek) {
-            batchData.push(
-                {
-                    trek_id: kedarnathTrek.id,
-                    start_date: "2025-09-10",
-                    end_date: "2025-09-14",
-                    capacity: 20,
-                },
-                {
-                    trek_id: kedarnathTrek.id,
-                    start_date: "2025-10-15",
-                    end_date: "2025-10-19",
-                    capacity: 20,
-                }
-            );
-        }
-
-        // Rishikesh Adventure Trek batches
-        const rishikeshTrek = createdTreks.find(
-            (t) => t.title === "Rishikesh Adventure Trek"
-        );
-        if (rishikeshTrek) {
-            batchData.push(
-                {
-                    trek_id: rishikeshTrek.id,
-                    start_date: "2025-07-20",
-                    end_date: "2025-07-23",
-                    capacity: 12,
-                },
-                {
-                    trek_id: rishikeshTrek.id,
-                    start_date: "2025-08-15",
-                    end_date: "2025-08-18",
-                    capacity: 12,
-                },
-                {
-                    trek_id: rishikeshTrek.id,
-                    start_date: "2025-09-10",
-                    end_date: "2025-09-13",
-                    capacity: 12,
-                }
-            );
-        }
-
-        // Solang Valley Trek batches
-        const solangTrek = createdTreks.find(
-            (t) => t.title === "Solang Valley Trek"
-        );
-        if (solangTrek) {
-            batchData.push(
-                {
-                    trek_id: solangTrek.id,
-                    start_date: "2025-08-05",
-                    end_date: "2025-08-09",
-                    capacity: 18,
-                },
-                {
-                    trek_id: solangTrek.id,
-                    start_date: "2025-09-20",
-                    end_date: "2025-09-24",
-                    capacity: 18,
-                }
-            );
-        }
-
-        // Triund Trek batches
-        const triundTrek = createdTreks.find((t) => t.title === "Triund Trek");
-        if (triundTrek) {
-            batchData.push(
-                {
-                    trek_id: triundTrek.id,
-                    start_date: "2025-09-15",
-                    end_date: "2025-09-17",
-                    capacity: 15,
-                },
-                {
-                    trek_id: triundTrek.id,
-                    start_date: "2025-10-10",
-                    end_date: "2025-10-12",
-                    capacity: 15,
-                }
-            );
-        }
-
-        // Pangong Lake Trek batches
-        const pangongTrek = createdTreks.find(
-            (t) => t.title === "Pangong Lake Trek"
-        );
-        if (pangongTrek) {
-            batchData.push(
-                {
-                    trek_id: pangongTrek.id,
-                    start_date: "2025-07-25",
-                    end_date: "2025-07-31",
-                    capacity: 10,
-                },
-                {
-                    trek_id: pangongTrek.id,
-                    start_date: "2025-08-20",
-                    end_date: "2025-08-26",
-                    capacity: 10,
-                }
-            );
-        }
-
-        // Khardungla Pass Trek batches
-        const khardunglaTrek = createdTreks.find(
-            (t) => t.title === "Khardungla Pass Trek"
-        );
-        if (khardunglaTrek) {
-            batchData.push(
-                {
-                    trek_id: khardunglaTrek.id,
-                    start_date: "2025-08-10",
-                    end_date: "2025-08-17",
-                    capacity: 8,
-                },
-                {
-                    trek_id: khardunglaTrek.id,
-                    start_date: "2025-09-05",
-                    end_date: "2025-09-12",
-                    capacity: 8,
-                }
-            );
-        }
-
-        // Yumthang Valley Trek batches
-        const yumthangTrek = createdTreks.find(
-            (t) => t.title === "Yumthang Valley Trek"
-        );
-        if (yumthangTrek) {
-            batchData.push(
-                {
-                    trek_id: yumthangTrek.id,
-                    start_date: "2025-05-20",
-                    end_date: "2025-05-25",
-                    capacity: 12,
-                },
-                {
-                    trek_id: yumthangTrek.id,
-                    start_date: "2025-06-15",
-                    end_date: "2025-06-20",
-                    capacity: 12,
-                }
-            );
-        }
-
-        // Lonavala Caves Trek batches
-        const lonavalaTrek = createdTreks.find(
-            (t) => t.title === "Lonavala Caves Trek"
-        );
-        if (lonavalaTrek) {
-            batchData.push(
-                {
-                    trek_id: lonavalaTrek.id,
-                    start_date: "2025-10-15",
-                    end_date: "2025-10-16",
-                    capacity: 25,
-                },
-                {
-                    trek_id: lonavalaTrek.id,
-                    start_date: "2025-11-20",
-                    end_date: "2025-11-21",
-                    capacity: 25,
-                }
-            );
-        }
-
-        // Mysore Palace Trek batches
-        const mysoreTrek = createdTreks.find(
-            (t) => t.title === "Mysore Palace Trek"
-        );
-        if (mysoreTrek) {
-            batchData.push(
-                {
-                    trek_id: mysoreTrek.id,
-                    start_date: "2025-11-10",
-                    end_date: "2025-11-12",
-                    capacity: 20,
-                },
-                {
-                    trek_id: mysoreTrek.id,
-                    start_date: "2025-12-15",
-                    end_date: "2025-12-17",
-                    capacity: 20,
-                }
-            );
-        }
-
-        // Munnar Tea Gardens Trek batches
-        const munnarTrek = createdTreks.find(
-            (t) => t.title === "Munnar Tea Gardens Trek"
-        );
-        if (munnarTrek) {
-            batchData.push(
-                {
-                    trek_id: munnarTrek.id,
-                    start_date: "2025-12-05",
-                    end_date: "2025-12-08",
-                    capacity: 18,
-                },
-                {
-                    trek_id: munnarTrek.id,
-                    start_date: "2026-01-10",
-                    end_date: "2026-01-13",
-                    capacity: 18,
-                }
-            );
-        }
-
-        // Create batches
-        if (batchData.length > 0) {
-            await Batch.bulkCreate(batchData);
-            console.log(`Created ${batchData.length} batches`);
-        }
-
-        // Get or create rating categories
-        const ratingCategories = [
-            {
-                name: "Safety and Security",
-                description: "How safe and secure the trek experience was",
-                is_active: true,
-                sort_order: 1,
-            },
-            {
-                name: "Organizer Manner",
-                description: "Professionalism and behavior of trek organizers",
-                is_active: true,
-                sort_order: 2,
-            },
-            {
-                name: "Trek Planning",
-                description: "Quality of trek planning and organization",
-                is_active: true,
-                sort_order: 3,
-            },
-            {
-                name: "Women Safety",
-                description: "Safety measures specifically for women trekkers",
-                is_active: true,
-                sort_order: 4,
-            },
-        ];
-
-        // Use findOrCreate to avoid duplicate entries
-        for (const category of ratingCategories) {
-            await RatingCategory.findOrCreate({
-                where: { name: category.name },
-                defaults: category,
-            });
-        }
-        console.log(
-            `Ensured ${ratingCategories.length} rating categories exist`
-        );
-
-        // Create sample reviews and ratings for some treks
-        const sampleReviews = [];
-        const sampleRatings = [];
-
-        // Get rating categories for creating sample ratings
-        const createdRatingCategories = await RatingCategory.findAll();
-
-        // Create sample reviews and ratings for Valley of Flowers Trek
-        if (valleyTrek && customers.length > 0) {
-            // Sample review
-            sampleReviews.push({
-                trek_id: valleyTrek.id,
-                customer_id: customers[0].id,
-                title: "Amazing Flower Valley Experience!",
-                content:
-                    "The Valley of Flowers trek was absolutely breathtaking. The colorful flowers, stunning landscapes, and professional guides made this an unforgettable experience. Highly recommended for nature lovers!",
-                is_verified: true,
-                status: "approved",
-            });
-
-            // Sample ratings for the same trek and customer
-            createdRatingCategories.forEach((category, index) => {
-                sampleRatings.push({
-                    trek_id: valleyTrek.id,
-                    customer_id: customers[0].id,
-                    category_id: category.id,
-                    rating_value: 4.5 + index * 0.1, // Varying ratings
-                    comment: `Great ${category.name.toLowerCase()} experience`,
-                    is_verified: true,
-                });
-            });
-        }
-
-        // Create sample reviews and ratings for Kedarnath Temple Trek
-        if (kedarnathTrek && customers.length > 1) {
-            // Sample review
-            sampleReviews.push({
-                trek_id: kedarnathTrek.id,
-                customer_id: customers[1].id,
-                title: "Spiritual Journey to Remember",
-                content:
-                    "The Kedarnath trek was a perfect blend of spirituality and adventure. The temple visit was divine, and the trek through the mountains was challenging yet rewarding. The organizers took great care of all participants.",
-                is_verified: true,
-                status: "approved",
-            });
-
-            // Sample ratings
-            createdRatingCategories.forEach((category, index) => {
-                sampleRatings.push({
-                    trek_id: kedarnathTrek.id,
-                    customer_id: customers[1].id,
-                    category_id: category.id,
-                    rating_value: 4.0 + index * 0.2, // Varying ratings
-                    comment: `Excellent ${category.name.toLowerCase()} standards`,
-                    is_verified: true,
-                });
-            });
-        }
-
-        // Create sample reviews and ratings for Rishikesh Adventure Trek
-        if (rishikeshTrek && customers.length > 2) {
-            // Sample review
-            sampleReviews.push({
-                trek_id: rishikeshTrek.id,
-                customer_id: customers[2].id,
-                title: "Thrilling Adventure Experience",
-                content:
-                    "The Rishikesh adventure trek exceeded all expectations! River rafting was exhilarating, rock climbing was challenging, and the overall experience was perfectly organized. Great for adventure enthusiasts!",
-                is_verified: true,
-                status: "approved",
-            });
-
-            // Sample ratings
-            createdRatingCategories.forEach((category, index) => {
-                sampleRatings.push({
-                    trek_id: rishikeshTrek.id,
-                    customer_id: customers[2].id,
-                    category_id: category.id,
-                    rating_value: 4.8 - index * 0.1, // Varying ratings
-                    comment: `Outstanding ${category.name.toLowerCase()} experience`,
-                    is_verified: true,
-                });
-            });
-        }
-
-        // Create sample reviews and ratings for Solang Valley Trek
-        if (solangTrek && customers.length > 0) {
-            // Sample review
-            sampleReviews.push({
-                trek_id: solangTrek.id,
-                customer_id: customers[0].id,
-                title: "Beautiful Valley Trek",
-                content:
-                    "Solang Valley offered stunning views and perfect weather. The trek was well-organized with comfortable accommodation and delicious food. The adventure activities were the highlight!",
-                is_verified: true,
-                status: "approved",
-            });
-
-            // Sample ratings
-            createdRatingCategories.forEach((category, index) => {
-                sampleRatings.push({
-                    trek_id: solangTrek.id,
-                    customer_id: customers[0].id,
-                    category_id: category.id,
-                    rating_value: 4.2 + index * 0.15, // Varying ratings
-                    comment: `Good ${category.name.toLowerCase()} experience`,
-                    is_verified: true,
-                });
-            });
-        }
-
-        // Create sample reviews and ratings for Triund Trek
-        if (triundTrek && customers.length > 1) {
-            // Sample review
-            sampleReviews.push({
-                trek_id: triundTrek.id,
-                customer_id: customers[1].id,
-                title: "Perfect Beginner Trek",
-                content:
-                    "Triund trek was perfect for beginners like me. The sunset views were spectacular, and the camping experience was amazing. The guides were knowledgeable and friendly.",
-                is_verified: true,
-                status: "approved",
-            });
-
-            // Sample ratings
-            createdRatingCategories.forEach((category, index) => {
-                sampleRatings.push({
-                    trek_id: triundTrek.id,
-                    customer_id: customers[1].id,
-                    category_id: category.id,
-                    rating_value: 4.3 + index * 0.1, // Varying ratings
-                    comment: `Satisfactory ${category.name.toLowerCase()} experience`,
-                    is_verified: true,
-                });
-            });
-        }
-
-        // Create reviews and ratings
-        if (sampleReviews.length > 0) {
-            await Review.bulkCreate(sampleReviews);
-            console.log(`Created ${sampleReviews.length} sample reviews`);
-        }
-
-        if (sampleRatings.length > 0) {
-            await Rating.bulkCreate(sampleRatings);
-            console.log(`Created ${sampleRatings.length} sample ratings`);
-        }
-
         // Display created treks count
+        const createdTreks = await Trek.findAll();
         console.log(`Created ${createdTreks.length} treks`);
+
+        // Show treks per vendor
+        for (const vendor of vendors) {
+            const vendorTreks = await Trek.findAll({
+                where: { vendor_id: vendor.id },
+            });
+            if (vendorTreks.length > 0) {
+                const companyInfo = vendor.company_info
+                    ? JSON.parse(vendor.company_info)
+                    : {};
+                const companyName =
+                    companyInfo.company_name || "Unknown Vendor";
+                console.log(`${companyName}: ${vendorTreks.length} treks`);
+            }
+        }
+
+        // Show treks by difficulty
+        const difficulties = ["easy", "moderate", "difficult", "extreme"];
+        for (const difficulty of difficulties) {
+            const difficultyTreks = await Trek.findAll({
+                where: { difficulty },
+            });
+            if (difficultyTreks.length > 0) {
+                console.log(
+                    `${
+                        difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
+                    }: ${difficultyTreks.length} treks`
+                );
+            }
+        }
     } catch (error) {
         console.error("Error seeding treks:", error);
     }

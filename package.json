@@ -5,7 +5,7 @@
     "scripts": {
         "sync": "node sync.js",
         "start": "nodemon server.js",
-        "migrate": "node seeders/roles.js && node seeders/admin.js && node seeders/states.js && node seeders/cities.js && node seeders/destinations.js",
+        "migrate": "node seeders/runAll.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],

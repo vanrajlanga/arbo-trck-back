@@ -12,10 +12,16 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 references: { model: "coupons", key: "id" },
             },
-            user_id: {
+            customer_id: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
-                references: { model: "users", key: "id" },
+                references: { model: "customers", key: "id" },
+            },
+            booking_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: { model: "bookings", key: "id" },
+                comment: "Booking where this coupon was applied",
             },
             assigned_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
             used_at: { type: DataTypes.DATE, allowNull: true },
@@ -31,9 +37,13 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: "coupon_id",
             as: "coupon",
         });
-        CouponAssignment.belongsTo(models.User, {
-            foreignKey: "user_id",
-            as: "user",
+        CouponAssignment.belongsTo(models.Customer, {
+            foreignKey: "customer_id",
+            as: "customer",
+        });
+        CouponAssignment.belongsTo(models.Booking, {
+            foreignKey: "booking_id",
+            as: "booking",
         });
         CouponAssignment.hasMany(models.Tracking, {
             foreignKey: "assignment_id",
