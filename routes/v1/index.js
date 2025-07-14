@@ -5,6 +5,8 @@ const router = express.Router();
 // Removed admin-dependent routes
 const trekRoutes = require("./trekRoutes");
 const couponRoutes = require("./couponRoutes");
+const stateRoutes = require("./stateRoutes");
+const cityRoutes = require("./cityRoutes");
 
 // New customer-centric routes
 const customerAuthRoutes = require("./customerAuthRoutes");
@@ -14,6 +16,8 @@ const travelerRoutes = require("./travelerRoutes");
 // Mount existing routes (for mobile app)
 router.use("/treks", trekRoutes);
 router.use("/coupons", couponRoutes);
+router.use("/states", stateRoutes);
+router.use("/cities", cityRoutes);
 
 // Mount new customer-centric routes (for mobile app)
 router.use("/customer/auth", customerAuthRoutes);
@@ -34,6 +38,8 @@ router.get("/", (req, res) => {
             travelers: "/api/v1/customer/travelers",
             public_treks: "/api/v1/treks",
             coupons: "/api/v1/coupons",
+            states: "/api/v1/states",
+            cities: "/api/v1/cities",
         },
         authentication: {
             customer: "Phone-based OTP authentication",
