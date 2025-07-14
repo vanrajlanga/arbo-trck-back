@@ -4,9 +4,7 @@ const { State, City } = require("../../models");
 exports.getAllCities = async (req, res) => {
     try {
         const cities = await City.findAll({
-            include: [
-                { model: State, as: "state", attributes: ["id", "name"] },
-            ],
+            attributes: ["id", "cityName", "isPopular"],
             order: [["cityName", "ASC"]],
         });
         res.json({
@@ -26,9 +24,7 @@ exports.getAllCities = async (req, res) => {
 exports.getCityById = async (req, res) => {
     try {
         const city = await City.findByPk(req.params.id, {
-            include: [
-                { model: State, as: "state", attributes: ["id", "name"] },
-            ],
+            attributes: ["id", "cityName", "isPopular"],
         });
         if (!city)
             return res
@@ -49,9 +45,7 @@ exports.getPopularCities = async (req, res) => {
     try {
         const cities = await City.findAll({
             where: { isPopular: true },
-            include: [
-                { model: State, as: "state", attributes: ["id", "name"] },
-            ],
+            attributes: ["id", "cityName", "isPopular"],
             order: [["cityName", "ASC"]],
         });
         res.json({
@@ -73,9 +67,7 @@ exports.getCitiesByState = async (req, res) => {
         const { stateId } = req.params;
         const cities = await City.findAll({
             where: { stateId },
-            include: [
-                { model: State, as: "state", attributes: ["id", "name"] },
-            ],
+            attributes: ["id", "cityName", "isPopular"],
             order: [["cityName", "ASC"]],
         });
         res.json({
