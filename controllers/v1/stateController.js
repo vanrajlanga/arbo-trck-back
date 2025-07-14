@@ -5,15 +5,7 @@ exports.getAllStates = async (req, res) => {
     try {
         const states = await State.findAll({
             where: { status: "active" },
-            include: [
-                {
-                    model: City,
-                    as: "cities",
-                    attributes: ["id", "cityName", "isPopular"],
-                    where: { isPopular: true },
-                    required: false,
-                },
-            ],
+            attributes: ["id", "name"],
             order: [["name", "ASC"]],
         });
         res.json({ success: true, data: states });
@@ -30,13 +22,7 @@ exports.getAllStates = async (req, res) => {
 exports.getStateById = async (req, res) => {
     try {
         const state = await State.findByPk(req.params.id, {
-            include: [
-                {
-                    model: City,
-                    as: "cities",
-                    attributes: ["id", "cityName", "isPopular"],
-                },
-            ],
+            attributes: ["id", "name"],
         });
         if (!state)
             return res
@@ -57,15 +43,7 @@ exports.getPopularStates = async (req, res) => {
     try {
         const states = await State.findAll({
             where: { status: "active" },
-            include: [
-                {
-                    model: City,
-                    as: "cities",
-                    attributes: ["id", "cityName"],
-                    where: { isPopular: true },
-                    required: true,
-                },
-            ],
+            attributes: ["id", "name"],
             order: [["name", "ASC"]],
         });
         res.json({ success: true, data: states });
@@ -85,13 +63,7 @@ exports.getStatesByRegion = async (req, res) => {
         // For now, return all states. You can implement region-based filtering later
         const states = await State.findAll({
             where: { status: "active" },
-            include: [
-                {
-                    model: City,
-                    as: "cities",
-                    attributes: ["id", "cityName"],
-                },
-            ],
+            attributes: ["id", "name"],
             order: [["name", "ASC"]],
         });
         res.json({ success: true, data: states, region });

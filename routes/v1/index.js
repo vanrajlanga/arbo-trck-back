@@ -7,6 +7,7 @@ const trekRoutes = require("./trekRoutes");
 const couponRoutes = require("./couponRoutes");
 const stateRoutes = require("./stateRoutes");
 const cityRoutes = require("./cityRoutes");
+const destinationRoutes = require("./destinationRoutes");
 
 // New customer-centric routes
 const customerAuthRoutes = require("./customerAuthRoutes");
@@ -18,6 +19,7 @@ router.use("/treks", trekRoutes);
 router.use("/coupons", couponRoutes);
 router.use("/states", stateRoutes);
 router.use("/cities", cityRoutes);
+router.use("/destinations", destinationRoutes);
 
 // Mount new customer-centric routes (for mobile app)
 router.use("/customer/auth", customerAuthRoutes);
@@ -40,6 +42,7 @@ router.get("/", (req, res) => {
             coupons: "/api/v1/coupons",
             states: "/api/v1/states",
             cities: "/api/v1/cities",
+            destinations: "/api/v1/destinations",
         },
         authentication: {
             customer: "Phone-based OTP authentication",
