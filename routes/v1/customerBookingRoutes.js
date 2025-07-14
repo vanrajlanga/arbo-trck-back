@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const newBookingController = require("../../controllers/v1/newBookingController");
+const bookingController = require("../../controllers/v1/bookingController");
 const {
     authenticateCustomer,
 } = require("../../middleware/customerAuthMiddleware");
@@ -9,6 +10,8 @@ const {
 router.use(authenticateCustomer);
 
 router.post("/", newBookingController.createBooking);
+router.post("/create-trek-order", bookingController.createOrder);
+router.post("/verify-payment", bookingController.verifyPayment);
 router.get("/", newBookingController.getCustomerBookings);
 router.get("/:id", newBookingController.getBookingDetails);
 router.put("/:id/cancel", newBookingController.cancelBooking);

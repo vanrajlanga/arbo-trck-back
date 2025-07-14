@@ -25,7 +25,7 @@ const {
 // Mobile: Get customer bookings
 exports.getCustomerBookings = async (req, res) => {
     try {
-        const customerId = req.user.customerId;
+        const customerId = req.customer.id;
         const { page = 1, limit = 10, status = "" } = req.query;
         const offset = (page - 1) * limit;
 
@@ -81,7 +81,7 @@ exports.getCustomerBookings = async (req, res) => {
 exports.getBookingById = async (req, res) => {
     try {
         const { id } = req.params;
-        const customerId = req.user.customerId;
+        const customerId = req.customer.id;
 
         if (!customerId) {
             return res.status(403).json({
@@ -136,7 +136,7 @@ exports.createBooking = async (req, res) => {
             specialRequests,
             couponCode,
         } = req.body;
-        const customerId = req.user.customerId;
+        const customerId = req.customer.id;
 
         if (!customerId) {
             return res.status(403).json({
@@ -294,7 +294,7 @@ exports.createOrder = async (req, res) => {
             pickupPointId,
             couponCode,
         } = req.body;
-        const customerId = req.user.customerId;
+        const customerId = req.customer.id;
 
         if (!customerId) {
             return res.status(403).json({
@@ -388,7 +388,7 @@ exports.verifyPayment = async (req, res) => {
             couponCode,
             specialRequests,
         } = req.body;
-        const customerId = req.user.customerId;
+        const customerId = req.customer.id;
 
         if (!customerId) {
             return res.status(403).json({
@@ -607,7 +607,7 @@ exports.verifyPayment = async (req, res) => {
 exports.cancelBooking = async (req, res) => {
     try {
         const { id } = req.params;
-        const customerId = req.user.customerId;
+        const customerId = req.customer.id;
 
         if (!customerId) {
             return res.status(403).json({

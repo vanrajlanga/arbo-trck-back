@@ -152,16 +152,8 @@ exports.getAllTreks = async (req, res) => {
     try {
         console.log("Starting getAllTreks function");
 
-        const {
-            page = 1,
-            limit = 20,
-            category,
-            difficulty,
-            destination_id,
-            city_id,
-            start_date,
-        } = req.query;
-        const offset = (page - 1) * limit;
+        const { category, difficulty, destination_id, city_id, start_date } =
+            req.query;
 
         // Build where clause
         const whereClause = { status: "active" };
@@ -182,8 +174,8 @@ exports.getAllTreks = async (req, res) => {
             whereClause.city_id = city_id;
         }
 
-        // Get treks with pagination
-        const { count, rows: treks } = await Trek.findAndCountAll({
+        // Get treks without pagination
+        const treks = await Trek.findAll({
             where: whereClause,
             include: [
                 {
@@ -194,145 +186,86 @@ exports.getAllTreks = async (req, res) => {
                         {
                             model: User,
                             as: "user",
-                            attributes: ["id", "name", "email", "phone"],
+                            attributes: ["name"],
                         },
                     ],
                 },
-                {
-                    model: Destination,
-                    as: "destinationData",
-                    attributes: ["id", "name"],
-                },
-                {
-                    model: City,
-                    as: "city",
-                    attributes: ["id", "cityName"],
-                },
-                {
-                    model: Badge,
-                    as: "badge",
-                    attributes: ["id", "name", "icon", "color", "category"],
-                    where: { is_active: true },
-                    required: false,
-                },
+            ],
+            attributes: [
+                "id",
+                "title",
+                "base_price",
+                "duration",
+                "discount_value",
+                "discount_type",
+                "has_discount",
             ],
             order: [["created_at", "DESC"]],
-            limit: parseInt(limit),
-            offset: parseInt(offset),
         });
 
-        // Fetch activity details for each trek
-        const treksWithActivities = await Promise.all(
+        // Process treks to return only required fields
+        const simplifiedTreks = await Promise.all(
             treks.map(async (trek) => {
                 const trekData = trek.toJSON();
 
-                // Fetch activity details if activities field exists and contains IDs
-                if (trekData.activities && Array.isArray(trekData.activities)) {
-                    const activityDetails = await fetchActivityDetails(
-                        trekData.activities
-                    );
-                    // Replace activity IDs with activity names
-                    trekData.activities = activityDetails.map(
-                        (activity) => activity.name
-                    );
-                } else {
-                    trekData.activities = [];
-                }
-
-                // Fetch cancellation policy details if cancellation_policies field exists and contains IDs
-                if (
-                    trekData.cancellation_policies &&
-                    Array.isArray(trekData.cancellation_policies)
-                ) {
-                    const cancellationPolicyDetails =
-                        await fetchCancellationPolicyDetails(
-                            trekData.cancellation_policies
-                        );
-                    // Replace policy IDs with policy details
-                    trekData.cancellation_policies = cancellationPolicyDetails;
-                } else {
-                    trekData.cancellation_policies = [];
-                }
-
                 // Calculate average rating for this trek
                 const trekRating = await calculateTrekRating(trekData.id);
-                trekData.rating = trekRating.overall;
-                trekData.ratingCount = trekRating.ratingCount;
-                trekData.categoryRatings = trekRating.categories;
 
-                // Flatten destination structure
-                if (trekData.destinationData) {
-                    trekData.destination = trekData.destinationData.name;
-                    delete trekData.destinationData;
+                // Get vendor name
+                const vendorName =
+                    trekData.vendor?.user?.name || "Unknown Vendor";
+
+                // Calculate discount text
+                let discountText = null;
+                if (trekData.has_discount && trekData.discount_value > 0) {
+                    if (trekData.discount_type === "percentage") {
+                        discountText = `${trekData.discount_value}% OFF`;
+                    } else {
+                        discountText = `₹${trekData.discount_value} OFF`;
+                    }
                 }
 
-                // Flatten vendor structure
-                if (trekData.vendor && trekData.vendor.user) {
-                    trekData.vendor = trekData.vendor.user.name;
-                }
-
-                // Flatten city structure
-                if (trekData.city) {
-                    trekData.city = trekData.city.cityName;
-                }
-
-                // Add badge information
-                if (trekData.badge) {
-                    trekData.badge = {
-                        name: trekData.badge.name,
-                        color: trekData.badge.color,
-                    };
-                } else {
-                    trekData.badge = null;
-                }
-
-                // Add batch data if start_date is provided
+                // Get batch info if start_date is provided
+                let batchInfo = null;
                 if (start_date) {
                     const batch = await Batch.findOne({
                         where: {
                             trek_id: trekData.id,
                             start_date: start_date,
                         },
-                        attributes: [
-                            "id",
-                            "start_date",
-                            "end_date",
-                            "capacity",
-                            "available_slots",
-                        ],
+                        attributes: ["id", "start_date", "available_slots"],
                     });
 
                     if (batch) {
-                        trekData.batch = {
+                        batchInfo = {
                             id: batch.id,
-                            start_date: batch.start_date,
-                            end_date: batch.end_date,
-                            capacity: batch.capacity,
-                            available_slots: batch.available_slots,
+                            startDate: batch.start_date,
+                            availableSlots: batch.available_slots,
                         };
-                    } else {
-                        trekData.batch = null;
                     }
-                } else {
-                    trekData.batch = null;
                 }
 
-                return trekData;
+                // Return only required fields
+                return {
+                    id: trekData.id,
+                    name: trekData.title,
+                    vendor: vendorName,
+                    hasDiscount: trekData.has_discount || false,
+                    discountText: discountText,
+                    rating: trekRating.overall,
+                    price: trekData.base_price,
+                    duration: trekData.duration,
+                    batchInfo: batchInfo,
+                };
             })
         );
 
-        console.log("Found treks:", treksWithActivities.length);
+        console.log("Found treks:", simplifiedTreks.length);
 
         res.json({
             success: true,
-            data: treksWithActivities,
-            count: treksWithActivities.length,
-            totalCount: count,
-            pagination: {
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(count / limit),
-                totalCount: count,
-            },
+            data: simplifiedTreks,
+            count: simplifiedTreks.length,
         });
     } catch (error) {
         console.error("Error fetching treks:", error);
