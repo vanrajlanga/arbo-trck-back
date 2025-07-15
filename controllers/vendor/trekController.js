@@ -19,6 +19,7 @@ const {
 const { validationResult } = require("express-validator");
 const { saveBase64Image, deleteImage } = require("../../utils/fileUpload");
 const { Op } = require("sequelize");
+const logger = require("../../utils/logger");
 
 // Helper function to parse JSON strings or return arrays
 const parseJsonField = (field) => {
@@ -154,7 +155,17 @@ exports.getVendorTreks = async (req, res) => {
     try {
         const vendorId = req.user.id; // Changed from req.user.vendorId to req.user.id
 
+        logger.trek("info", "Fetching vendor treks", {
+            vendorId,
+            ip: req.ip,
+            userAgent: req.get("User-Agent"),
+        });
+
         if (!vendorId) {
+            logger.trek("warn", "Access denied - no vendor ID", {
+                ip: req.ip,
+                userAgent: req.get("User-Agent"),
+            });
             return res.status(403).json({
                 success: false,
                 message: "Access denied. Vendor account required.",
@@ -378,7 +389,23 @@ exports.getTrekById = async (req, res) => {
 exports.createTrek = async (req, res) => {
     try {
         const vendorId = req.user.id;
+
+        logger.trek("info", "Creating new trek", {
+            vendorId,
+            title: req.body.title,
+            destinationId: req.body.destination_id,
+            ip: req.ip,
+        });
+
         if (!vendorId) {
+            logger.trek(
+                "warn",
+                "Access denied - no vendor ID for trek creation",
+                {
+                    ip: req.ip,
+                    userAgent: req.get("User-Agent"),
+                }
+            );
             return res.status(403).json({
                 success: false,
                 message: "Access denied. Vendor account required.",
@@ -438,13 +465,25 @@ exports.createTrek = async (req, res) => {
 
         const trek = await Trek.create(trekData);
 
+        logger.trek("info", "Trek created successfully", {
+            trekId: trek.id,
+            vendorId,
+            title: trek.title,
+        });
+
         res.status(201).json({
             success: true,
             message: "Trek created successfully",
             data: trek,
         });
     } catch (error) {
-        console.error("Error creating trek:", error);
+        logger.trek("error", "Failed to create trek", {
+            vendorId,
+            error: error.message,
+            stack: error.stack,
+            body: req.body,
+        });
+
         res.status(500).json({
             success: false,
             message: "Failed to create trek",

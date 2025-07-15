@@ -28,7 +28,9 @@
         "seed:treks": "node seeders/treks.js",
         "seed:trekStages": "node seeders/trekStages.js",
         "seed:vendors": "node seeders/vendors.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "logs:test": "node -e \"const logger = require('./utils/logger'); logger.info('app', 'Test log entry', {test: true}); console.log('✅ Log test completed - check logs directory');\"",
+        "logs:clear": "rm -rf logs/*.log"
     },
     "keywords": [],
     "author": "",

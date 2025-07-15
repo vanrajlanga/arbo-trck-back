@@ -4,14 +4,18 @@ const morgan = require("morgan");
 const path = require("path");
 const { sequelize } = require("./models");
 const { handleSequelizeErrors } = require("./middleware/validationMiddleware");
+const logger = require("./utils/logger");
 require("dotenv").config();
 
 // Initialize Firebase
 const { initializeFirebase } = require("./config/firebase");
 try {
     initializeFirebase();
+    logger.app("info", "Firebase initialized successfully");
 } catch (error) {
-    console.error("Failed to initialize Firebase:", error);
+    logger.error("error", "Failed to initialize Firebase", {
+        error: error.message,
+    });
 }
 
 // Import v1 routes (for mobile app)
@@ -34,7 +38,21 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(morgan("dev"));
+
+// Request logging middleware
+app.use(logger.logRequest.bind(logger));
+
+// Morgan logging (HTTP requests)
+app.use(
+    morgan("combined", {
+        stream: {
+            write: (message) => {
+                logger.api("info", message.trim());
+            },
+        },
+    })
+);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -107,9 +125,20 @@ app.get("/api", (req, res) => {
 // Enhanced error handling middleware
 app.use(handleSequelizeErrors);
 
+// Error logging middleware
+app.use(logger.logError.bind(logger));
+
 // General error handling
 app.use((err, req, res, next) => {
-    console.error("Error:", err);
+    // Log the error
+    logger.error("error", "Unhandled application error", {
+        error: err.message,
+        stack: err.stack,
+        url: req.url,
+        method: req.method,
+        ip: req.ip,
+        userId: req.user?.id,
+    });
 
     // Handle specific error types
     if (err.name === "ValidationError") {
