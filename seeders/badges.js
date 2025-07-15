@@ -139,12 +139,12 @@ const seedBadges = async () => {
         console.log("🌱 Seeding badges...");
 
         for (const badgeData of badges) {
-            const existingBadge = await Badge.findOne({
+            const [badge, created] = await Badge.findOrCreate({
                 where: { name: badgeData.name },
+                defaults: badgeData,
             });
 
-            if (!existingBadge) {
-                await Badge.create(badgeData);
+            if (created) {
                 console.log(`  ✅ Created badge: ${badgeData.name}`);
             } else {
                 console.log(`  ⏭️  Badge already exists: ${badgeData.name}`);
@@ -173,3 +173,18 @@ module.exports = {
     seedBadges,
     clearBadges,
 };
+
+// Run if called directly
+if (require.main === module) {
+    const { sequelize } = require("../models");
+
+    seedBadges()
+        .then(() => {
+            console.log("\n✨ Badge seeding completed!");
+            process.exit(0);
+        })
+        .catch((err) => {
+            console.error("❌ Badge seeding failed:", err);
+            process.exit(1);
+        });
+}
