@@ -14,6 +14,29 @@ const sequelize = new Sequelize(
     config
 );
 
+// Test database connection
+sequelize
+    .authenticate()
+    .then(() => {
+        logger.database(
+            "info",
+            "Database connection established successfully",
+            {
+                database: config.database,
+                host: config.host,
+                dialect: config.dialect,
+            }
+        );
+    })
+    .catch((err) => {
+        logger.database("error", "Unable to connect to the database", {
+            error: err.message,
+            database: config.database,
+            host: config.host,
+            dialect: config.dialect,
+        });
+    });
+
 fs.readdirSync(__dirname)
     .filter(
         (file) =>
