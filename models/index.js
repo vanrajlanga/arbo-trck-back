@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const Sequelize = require("sequelize");
+const logger = require("../utils/logger");
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || "development";
 const config = require("../config/config")[env];
@@ -24,12 +25,15 @@ fs.readdirSync(__dirname)
     .forEach((file) => {
         try {
             const model = require(path.join(__dirname, file));
-            if (typeof model === 'function') {
+            if (typeof model === "function") {
                 const modelInstance = model(sequelize, Sequelize.DataTypes);
                 db[modelInstance.name] = modelInstance;
             }
         } catch (error) {
-            console.warn(`Warning: Could not load model from file ${file}:`, error.message);
+            logger.database("warn", `Could not load model from file ${file}`, {
+                error: error.message,
+                stack: error.stack,
+            });
         }
     });
 

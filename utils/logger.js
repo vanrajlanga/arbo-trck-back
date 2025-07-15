@@ -122,7 +122,7 @@ class Logger {
             meta.requestId = global.currentRequest.id;
             meta.userId = global.currentRequest.user?.id;
             meta.ip = global.currentRequest.ip;
-            meta.userAgent = global.currentRequest.get("User-Agent");
+            meta.userAgent = global.currentRequest.userAgent;
         }
 
         logger.log(level, message, meta);
@@ -213,6 +213,7 @@ class Logger {
             ip: req.ip,
             method: req.method,
             url: req.url,
+            userAgent: req.get("User-Agent"),
             startTime,
         };
 

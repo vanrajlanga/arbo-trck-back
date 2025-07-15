@@ -1,6 +1,7 @@
 const { Vendor, User } = require("../../models");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const logger = require("../../utils/logger");
 
 const JWT_SECRET = process.env.JWT_SECRET || "vendor_jwt_secret";
 
@@ -50,6 +51,12 @@ exports.register = async (req, res) => {
             status: "active",
         });
 
+        logger.auth("info", "Vendor registered successfully", {
+            vendorId: vendor.id,
+            userId: user.id,
+            email: user.email,
+        });
+
         return res.status(201).json({
             message: "Vendor registered successfully",
             vendor: {
@@ -62,7 +69,11 @@ exports.register = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error("Vendor register error", err);
+        logger.auth("error", "Vendor registration failed", {
+            error: err.message,
+            stack: err.stack,
+            email: req.body.email,
+        });
         res.status(500).json({ message: "Registration failed" });
     }
 };
@@ -80,6 +91,10 @@ exports.login = async (req, res) => {
         // Find user by email
         const user = await User.findOne({ where: { email } });
         if (!user) {
+            logger.auth("warn", "Login attempt with invalid email", {
+                email: email,
+                ip: req.ip,
+            });
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
@@ -90,17 +105,33 @@ exports.login = async (req, res) => {
         });
 
         if (!vendor) {
+            logger.auth("warn", "Login attempt by non-vendor user", {
+                email: email,
+                userId: user.id,
+                ip: req.ip,
+            });
             return res.status(401).json({ message: "User is not a vendor" });
         }
 
         // Verify password
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) {
+            logger.auth("warn", "Login attempt with invalid password", {
+                email: email,
+                userId: user.id,
+                ip: req.ip,
+            });
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
         // Check if vendor is active
         if (vendor.status !== "active") {
+            logger.auth("warn", "Login attempt by inactive vendor", {
+                email: email,
+                vendorId: vendor.id,
+                status: vendor.status,
+                ip: req.ip,
+            });
             return res
                 .status(401)
                 .json({ message: "Vendor account is not active" });
@@ -117,6 +148,13 @@ exports.login = async (req, res) => {
             { expiresIn: "7d" }
         );
 
+        logger.auth("info", "Vendor login successful", {
+            vendorId: vendor.id,
+            userId: user.id,
+            email: user.email,
+            ip: req.ip,
+        });
+
         res.json({
             token,
             vendor: {
@@ -129,7 +167,12 @@ exports.login = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error("Vendor login error", err);
+        logger.auth("error", "Vendor login failed", {
+            error: err.message,
+            stack: err.stack,
+            email: req.body.email,
+            ip: req.ip,
+        });
         res.status(500).json({ message: "Login failed" });
     }
 };

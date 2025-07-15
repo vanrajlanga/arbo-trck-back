@@ -175,4 +175,22 @@ app.use((req, res) => {
 
 // Removed database synchronization here; use the standalone sync.js script instead
 
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+    logger.error("error", "Unhandled Promise Rejection", {
+        reason: reason,
+        promise: promise,
+        stack: reason.stack,
+    });
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (error) => {
+    logger.error("error", "Uncaught Exception", {
+        error: error.message,
+        stack: error.stack,
+    });
+    process.exit(1);
+});
+
 module.exports = app;
