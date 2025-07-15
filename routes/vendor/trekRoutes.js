@@ -30,13 +30,15 @@ const validateTrek = [
         .isInt({ min: 1 })
         .withMessage("Destination ID must be a positive integer"),
 
-    body("city_id")
+    body("city_ids")
         .optional()
+        .isArray()
+        .withMessage("City IDs must be an array")
         .custom((value) => {
-            if (value === null || value === undefined) return true;
-            return Number.isInteger(value) && value > 0;
+            if (!Array.isArray(value)) return true;
+            return value.every((id) => Number.isInteger(id) && id > 0);
         })
-        .withMessage("City ID must be null or a positive integer"),
+        .withMessage("All city IDs must be positive integers"),
 
     // Duration and Pricing
     body("duration")
@@ -107,12 +109,30 @@ const validateTrek = [
         .isLength({ max: 200 })
         .withMessage("Meeting point must be less than 200 characters"),
 
-    body("meeting_time")
-        .notEmpty()
-        .withMessage("Meeting time is required")
+    // New text fields
+    body("short_description")
+        .optional()
         .trim()
-        .isLength({ max: 50 })
-        .withMessage("Meeting time must be less than 50 characters"),
+        .isLength({ max: 500 })
+        .withMessage("Short description must be less than 500 characters"),
+
+    body("trekking_rules")
+        .optional()
+        .trim()
+        .isLength({ max: 2000 })
+        .withMessage("Trekking rules must be less than 2000 characters"),
+
+    body("emergency_protocols")
+        .optional()
+        .trim()
+        .isLength({ max: 2000 })
+        .withMessage("Emergency protocols must be less than 2000 characters"),
+
+    body("organizer_notes")
+        .optional()
+        .trim()
+        .isLength({ max: 2000 })
+        .withMessage("Organizer notes must be less than 2000 characters"),
 
     // Arrays and JSON fields
     body("inclusions")
@@ -139,56 +159,12 @@ const validateTrek = [
         .isLength({ max: 200 })
         .withMessage("Exclusion items must be less than 200 characters"),
 
-    // Cancellation Policies - Required
-    body("cancellation_policies")
+    // Cancellation Policy - Required
+    body("cancellation_policy_id")
         .notEmpty()
-        .withMessage("Cancellation policies are required")
-        .isArray({ min: 1 })
-        .withMessage("At least one cancellation policy is required"),
-
-    body("cancellation_policies.*.title")
-        .notEmpty()
-        .withMessage("Cancellation policy title is required")
-        .trim()
-        .isLength({ max: 100 })
-        .withMessage(
-            "Cancellation policy title must be less than 100 characters"
-        ),
-
-    body("cancellation_policies.*.description")
-        .notEmpty()
-        .withMessage("Cancellation policy description is required")
-        .trim()
-        .isLength({ max: 500 })
-        .withMessage(
-            "Cancellation policy description must be less than 500 characters"
-        ),
-
-    body("cancellation_policies.*.descriptionPoints")
-        .optional()
-        .isArray()
-        .withMessage("Cancellation policy description points must be an array"),
-
-    body("cancellation_policies.*.descriptionPoints.*")
-        .optional()
-        .trim()
-        .isLength({ max: 200 })
-        .withMessage(
-            "Cancellation policy description points must be less than 200 characters"
-        ),
-
-    body("cancellation_policies.*.rules")
-        .optional()
-        .isArray()
-        .withMessage("Cancellation policy rules must be an array"),
-
-    body("cancellation_policies.*.rules.*")
-        .optional()
-        .trim()
-        .isLength({ max: 200 })
-        .withMessage(
-            "Cancellation policy rules must be less than 200 characters"
-        ),
+        .withMessage("Cancellation policy is required")
+        .isInt({ min: 1 })
+        .withMessage("Cancellation policy ID must be a positive integer"),
 
     // Other Policies - Optional
     body("other_policies")
@@ -279,6 +255,7 @@ router.put("/:id", validateTrek, trekController.updateTrek);
 router.delete("/:id", trekController.deleteTrek);
 router.patch("/:id/status", trekController.toggleTrekStatus);
 router.get("/:id/batches", trekController.getTrekBatches);
+router.post("/:id/batches", trekController.createBatches);
 
 // Placeholder routes for future implementation
 router.get("/:id/bookings", (req, res) => {

@@ -12,10 +12,6 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 references: { model: "treks", key: "id" },
             },
-            day_number: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-            },
             activities: {
                 type: DataTypes.JSON,
                 allowNull: true,
@@ -33,10 +29,6 @@ module.exports = (sequelize, DataTypes) => {
                     }
                     return [];
                 },
-            },
-            description: {
-                type: DataTypes.TEXT,
-                allowNull: true,
             },
         },
         {

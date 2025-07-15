@@ -13,6 +13,7 @@ const analyticsRoutes = require("./analyticsRoutes");
 const destinationRoutes = require("./destinationRoutes");
 const couponRoutes = require("./couponRoutes");
 const activityRoutes = require("./activityRoutes");
+const cancellationPolicyRoutes = require("./cancellationPolicyRoutes");
 
 // Mount /auth routes (public: login/register)
 router.use("/auth", authRoutes);
@@ -30,6 +31,7 @@ router.use("/analytics", analyticsRoutes);
 router.use("/destinations", destinationRoutes);
 router.use("/coupons", couponRoutes);
 router.use("/activities", activityRoutes);
+router.use("/cancellation-policies", cancellationPolicyRoutes);
 
 // Vendor API info
 router.get("/", (req, res) => {

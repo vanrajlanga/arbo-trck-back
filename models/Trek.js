@@ -25,10 +25,24 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 references: { model: "destinations", key: "id" },
             },
-            city_id: {
-                type: DataTypes.INTEGER,
+            city_ids: {
+                type: DataTypes.JSON,
                 allowNull: true,
-                references: { model: "cities", key: "id" },
+                get() {
+                    const rawValue = this.getDataValue("city_ids");
+                    if (!rawValue) return [];
+                    if (Array.isArray(rawValue)) return rawValue;
+                    if (typeof rawValue === "string") {
+                        try {
+                            const parsed = JSON.parse(rawValue);
+                            return Array.isArray(parsed) ? parsed : [];
+                        } catch (e) {
+                            return [];
+                        }
+                    }
+                    return [];
+                },
+                comment: "JSON array of city IDs",
             },
             duration: {
                 type: DataTypes.STRING,
@@ -74,9 +88,25 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            meeting_time: {
-                type: DataTypes.STRING,
+            short_description: {
+                type: DataTypes.TEXT,
                 allowNull: true,
+                comment: "Short description for the trek",
+            },
+            trekking_rules: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+                comment: "Trekking rules and guidelines",
+            },
+            emergency_protocols: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+                comment: "Emergency protocols and safety notes",
+            },
+            organizer_notes: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+                comment: "Additional notes from the organizer",
             },
             inclusions: {
                 type: DataTypes.JSON,
@@ -136,24 +166,11 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: false,
                 comment: "Whether the trek has an active discount",
             },
-            cancellation_policies: {
-                type: DataTypes.JSON,
+            cancellation_policy_id: {
+                type: DataTypes.INTEGER,
                 allowNull: true,
-                get() {
-                    const rawValue = this.getDataValue("cancellation_policies");
-                    if (!rawValue) return [];
-                    if (Array.isArray(rawValue)) return rawValue;
-                    if (typeof rawValue === "string") {
-                        try {
-                            const parsed = JSON.parse(rawValue);
-                            return Array.isArray(parsed) ? parsed : [];
-                        } catch (e) {
-                            return [];
-                        }
-                    }
-                    return [];
-                },
-                comment: "JSON array of cancellation policies - mandatory",
+                references: { model: "cancellation_policies", key: "id" },
+                comment: "Reference to cancellation policy",
             },
             other_policies: {
                 type: DataTypes.JSON,
@@ -215,9 +232,9 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: "destination_id",
             as: "destinationData",
         });
-        Trek.belongsTo(models.City, {
-            foreignKey: "city_id",
-            as: "city",
+        Trek.belongsTo(models.CancellationPolicy, {
+            foreignKey: "cancellation_policy_id",
+            as: "cancellation_policy",
         });
         Trek.hasMany(models.Category, {
             foreignKey: "trek_id",

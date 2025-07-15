@@ -1,4 +1,5 @@
 const { Destination } = require("../../models");
+const { Op } = require("sequelize");
 
 // Get all destinations
 const getAllDestinations = async (req, res) => {
@@ -19,6 +20,46 @@ const getAllDestinations = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch destinations",
+        });
+    }
+};
+
+// Search destinations for autocomplete
+const searchDestinations = async (req, res) => {
+    try {
+        const { q: searchTerm, limit = 10 } = req.query;
+
+        if (!searchTerm || searchTerm.length < 2) {
+            return res.json({
+                success: true,
+                data: { destinations: [] },
+            });
+        }
+
+        const destinations = await Destination.findAll({
+            where: {
+                name: {
+                    [Op.like]: `%${searchTerm}%`,
+                },
+                status: "active",
+            },
+            attributes: ["id", "name", "isPopular", "state"],
+            limit: parseInt(limit),
+            order: [
+                ["isPopular", "DESC"],
+                ["name", "ASC"],
+            ],
+        });
+
+        res.json({
+            success: true,
+            data: { destinations },
+        });
+    } catch (error) {
+        console.error("Error searching destinations:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to search destinations",
         });
     }
 };
@@ -151,6 +192,7 @@ const getPopularDestinations = async (req, res) => {
 
 module.exports = {
     getAllDestinations,
+    searchDestinations,
     getDestinationById,
     createDestination,
     updateDestination,

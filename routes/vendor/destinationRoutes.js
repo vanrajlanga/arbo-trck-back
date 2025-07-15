@@ -9,6 +9,9 @@ router.use(authMiddleware);
 // Get all destinations (for dropdowns)
 router.get("/", destinationController.getAllDestinations);
 
+// Search destinations for autocomplete
+router.get("/search", destinationController.searchDestinations);
+
 // Get popular destinations
 router.get("/popular", destinationController.getPopularDestinations);
 

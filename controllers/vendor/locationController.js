@@ -6,6 +6,8 @@ exports.getStates = async (req, res) => {
         const states = await State.findAll({
             where: { status: "active" },
             order: [["name", "ASC"]],
+            attributes: ["id", "name"],
+            raw: true,
         });
         res.json({ success: true, data: states });
     } catch (err) {

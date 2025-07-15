@@ -1,6 +1,13 @@
 "use strict";
 
-const { Trek, Vendor, Destination, City, Activity } = require("../models");
+const {
+    Trek,
+    Vendor,
+    Destination,
+    City,
+    Activity,
+    CancellationPolicy,
+} = require("../models");
 
 const seedTreks = async () => {
     try {
@@ -9,19 +16,23 @@ const seedTreks = async () => {
         const destinations = await Destination.findAll();
         const cities = await City.findAll();
         const activities = await Activity.findAll();
+        const cancellationPolicies = await CancellationPolicy.findAll({
+            where: { is_active: true },
+        });
 
         console.log(
-            `Found ${vendors.length} vendors, ${destinations.length} destinations, ${cities.length} cities, ${activities.length} activities`
+            `Found ${vendors.length} vendors, ${destinations.length} destinations, ${cities.length} cities, ${activities.length} activities, ${cancellationPolicies.length} cancellation policies`
         );
 
         if (
             vendors.length === 0 ||
             destinations.length === 0 ||
             cities.length === 0 ||
-            activities.length === 0
+            activities.length === 0 ||
+            cancellationPolicies.length === 0
         ) {
             console.log(
-                "Required data not found. Please run vendors, destinations, cities, and activities seeders first."
+                "Required data not found. Please run vendors, destinations, cities, activities, and cancellation policies seeders first."
             );
             return;
         }
@@ -31,6 +42,15 @@ const seedTreks = async () => {
         activities.forEach((activity) => {
             activityMap[activity.name] = activity.id;
         });
+
+        // Helper function to get random cancellation policies
+        const getRandomCancellationPolicies = () => {
+            const numPolicies = Math.floor(Math.random() * 2) + 1; // 1 or 2 policies
+            const shuffled = [...cancellationPolicies].sort(
+                () => 0.5 - Math.random()
+            );
+            return shuffled.slice(0, numPolicies).map((policy) => policy.id);
+        };
 
         // Debug: Check if we have enough data for the treks array
         if (vendors.length < 5) {
@@ -73,7 +93,6 @@ const seedTreks = async () => {
                 category: "Flower Valley",
                 status: "active",
                 meeting_point: "Dehradun Railway Station",
-                meeting_time: "06:00",
                 inclusions: [
                     "Accommodation in guesthouses and camps",
                     "All meals (breakfast, lunch, dinner)",
@@ -96,36 +115,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 3,
                     activityMap["Local Cuisine"] || 4,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Valley of Flowers Trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 30+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 15-29 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 7-14 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 7 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Force majeure events may affect cancellation terms",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -144,7 +134,6 @@ const seedTreks = async () => {
                 category: "Pilgrimage",
                 status: "active",
                 meeting_point: "Haridwar Railway Station",
-                meeting_time: "07:00",
                 inclusions: [
                     "Accommodation in guesthouses and dharamshalas",
                     "Vegetarian meals (breakfast, lunch, dinner)",
@@ -168,36 +157,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 4,
                     activityMap["Local Cuisine"] || 5,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Special cancellation terms for Kedarnath Trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 45+ days before",
-                                deduction: "5%",
-                            },
-                            {
-                                rule: "Cancellation 30-44 days before",
-                                deduction: "15%",
-                            },
-                            {
-                                rule: "Cancellation 15-29 days before",
-                                deduction: "30%",
-                            },
-                            {
-                                rule: "Cancellation less than 15 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Special terms for religious pilgrimage",
-                            "Refunds processed within 7-10 business days",
-                            "Weather conditions may affect trek schedule",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -216,7 +176,6 @@ const seedTreks = async () => {
                 category: "Adventure",
                 status: "active",
                 meeting_point: "McLeod Ganj Bus Stand",
-                meeting_time: "08:00",
                 inclusions: [
                     "Accommodation in camps",
                     "All meals (breakfast, lunch, dinner)",
@@ -240,36 +199,7 @@ const seedTreks = async () => {
                     activityMap["Local Cuisine"] || 4,
                     activityMap["Meditation"] || 5,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Triund Trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 15+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 7-14 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 3-6 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 3 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Weather conditions may affect trek schedule",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -288,7 +218,6 @@ const seedTreks = async () => {
                 category: "High Altitude",
                 status: "active",
                 meeting_point: "Leh Airport",
-                meeting_time: "09:00",
                 inclusions: [
                     "Accommodation in camps and guesthouses",
                     "All meals (breakfast, lunch, dinner)",
@@ -314,35 +243,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 4,
                     activityMap["Meditation"] || 5,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description: "Special terms for high-altitude trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 60+ days before",
-                                deduction: "5%",
-                            },
-                            {
-                                rule: "Cancellation 30-59 days before",
-                                deduction: "15%",
-                            },
-                            {
-                                rule: "Cancellation 15-29 days before",
-                                deduction: "30%",
-                            },
-                            {
-                                rule: "Cancellation less than 15 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Special terms for extreme altitude trek",
-                            "Medical fitness certificate required",
-                            "Weather and altitude may affect schedule",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -361,7 +262,6 @@ const seedTreks = async () => {
                 category: "Extreme",
                 status: "active",
                 meeting_point: "Leh Airport",
-                meeting_time: "08:00",
                 inclusions: [
                     "Accommodation in camps and guesthouses",
                     "All meals (breakfast, lunch, dinner)",
@@ -388,35 +288,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 4,
                     activityMap["Mountain Biking"] || 5,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description: "Special terms for extreme altitude trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 90+ days before",
-                                deduction: "5%",
-                            },
-                            {
-                                rule: "Cancellation 60-89 days before",
-                                deduction: "15%",
-                            },
-                            {
-                                rule: "Cancellation 30-59 days before",
-                                deduction: "30%",
-                            },
-                            {
-                                rule: "Cancellation less than 30 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Special terms for extreme altitude trek",
-                            "Medical fitness certificate mandatory",
-                            "Weather and altitude may affect schedule",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -435,7 +307,6 @@ const seedTreks = async () => {
                 category: "Valley",
                 status: "active",
                 meeting_point: "Gangtok Bus Stand",
-                meeting_time: "07:00",
                 inclusions: [
                     "Accommodation in guesthouses and camps",
                     "All meals (breakfast, lunch, dinner)",
@@ -460,36 +331,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 4,
                     activityMap["Local Cuisine"] || 5,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Yumthang Trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 30+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 15-29 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 7-14 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 7 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Weather conditions may affect trek schedule",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -508,7 +350,6 @@ const seedTreks = async () => {
                 category: "Adventure",
                 status: "active",
                 meeting_point: "Rishikesh Railway Station",
-                meeting_time: "08:00",
                 inclusions: [
                     "Accommodation in camps and guesthouses",
                     "All meals (breakfast, lunch, dinner)",
@@ -533,36 +374,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 4,
                     activityMap["Local Cuisine"] || 5,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Rishikesh Adventure",
-                        rules: [
-                            {
-                                rule: "Cancellation 15+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 7-14 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 3-6 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 3 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Weather conditions may affect activities",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -581,7 +393,6 @@ const seedTreks = async () => {
                 category: "Adventure",
                 status: "active",
                 meeting_point: "Manali Bus Stand",
-                meeting_time: "08:30",
                 inclusions: [
                     "Accommodation in guesthouses and camps",
                     "All meals (breakfast, lunch, dinner)",
@@ -605,36 +416,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 4,
                     activityMap["Local Cuisine"] || 5,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Solang Adventure",
-                        rules: [
-                            {
-                                rule: "Cancellation 20+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 10-19 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 5-9 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 5 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Weather conditions may affect adventure activities",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -653,7 +435,6 @@ const seedTreks = async () => {
                 category: "Cultural",
                 status: "active",
                 meeting_point: "Mysore Railway Station",
-                meeting_time: "09:00",
                 inclusions: [
                     "Accommodation in heritage hotels",
                     "All meals (breakfast, lunch, dinner)",
@@ -676,36 +457,7 @@ const seedTreks = async () => {
                     activityMap["Photography"] || 3,
                     activityMap["Camping"] || 4,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Cultural Trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 15+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 7-14 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 3-6 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 3 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Cultural events may affect schedule",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -724,7 +476,6 @@ const seedTreks = async () => {
                 category: "Cave Trek",
                 status: "active",
                 meeting_point: "Lonavala Railway Station",
-                meeting_time: "09:30",
                 inclusions: [
                     "Accommodation in guesthouses",
                     "All meals (breakfast, lunch, dinner)",
@@ -747,36 +498,7 @@ const seedTreks = async () => {
                     activityMap["Local Cuisine"] || 3,
                     activityMap["Camping"] || 4,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Cave Trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 10+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 5-9 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 2-4 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 2 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Weather conditions may affect cave visits",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
             {
@@ -795,7 +517,6 @@ const seedTreks = async () => {
                 category: "Tea Garden",
                 status: "active",
                 meeting_point: "Munnar Bus Stand",
-                meeting_time: "08:00",
                 inclusions: [
                     "Accommodation in tea estate bungalows",
                     "All meals (breakfast, lunch, dinner)",
@@ -818,36 +539,7 @@ const seedTreks = async () => {
                     activityMap["Village Visit"] || 3,
                     activityMap["Camping"] || 4,
                 ],
-                cancellation_policies: [
-                    {
-                        title: "Cancellation Policy",
-                        description:
-                            "Standard cancellation terms for Tea Garden Trek",
-                        rules: [
-                            {
-                                rule: "Cancellation 15+ days before",
-                                deduction: "10%",
-                            },
-                            {
-                                rule: "Cancellation 7-14 days before",
-                                deduction: "25%",
-                            },
-                            {
-                                rule: "Cancellation 3-6 days before",
-                                deduction: "50%",
-                            },
-                            {
-                                rule: "Cancellation less than 3 days",
-                                deduction: "100%",
-                            },
-                        ],
-                        descriptionPoints: [
-                            "Cancellation must be made in writing",
-                            "Refunds processed within 5-7 business days",
-                            "Weather conditions may affect garden visits",
-                        ],
-                    },
-                ],
+                cancellation_policies: getRandomCancellationPolicies(),
                 other_policies: [],
             },
         ];

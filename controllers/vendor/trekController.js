@@ -170,18 +170,6 @@ exports.getVendorTreks = async (req, res) => {
                     required: false,
                 },
                 {
-                    model: City,
-                    as: "city",
-                    required: false,
-                    include: [
-                        {
-                            model: State,
-                            as: "state",
-                            required: false,
-                        },
-                    ],
-                },
-                {
                     model: ItineraryItem,
                     as: "itinerary_items",
                     required: false,
@@ -228,12 +216,33 @@ exports.getVendorTreks = async (req, res) => {
                     });
                 }
 
+                // Fetch city details if city_ids exist
+                let cityDetails = [];
+                if (
+                    trek.city_ids &&
+                    Array.isArray(trek.city_ids) &&
+                    trek.city_ids.length > 0
+                ) {
+                    cityDetails = await City.findAll({
+                        where: { id: trek.city_ids },
+                        include: [
+                            {
+                                model: State,
+                                as: "state",
+                                required: false,
+                            },
+                        ],
+                        attributes: ["id", "cityName", "isPopular"],
+                    });
+                }
+
                 return {
                     ...trek.toJSON(),
                     rating: trekRating.overall,
                     ratingCount: trekRating.ratingCount,
                     categoryRatings: trekRating.categories,
                     activityDetails: activityDetails,
+                    cityDetails: cityDetails,
                 };
             })
         );
@@ -271,18 +280,6 @@ exports.getTrekById = async (req, res) => {
                     model: Destination,
                     as: "destinationData",
                     required: false,
-                },
-                {
-                    model: City,
-                    as: "city",
-                    required: false,
-                    include: [
-                        {
-                            model: State,
-                            as: "state",
-                            required: false,
-                        },
-                    ],
                 },
                 {
                     model: ItineraryItem,
@@ -335,12 +332,33 @@ exports.getTrekById = async (req, res) => {
             });
         }
 
+        // Fetch city details if city_ids exist
+        let cityDetails = [];
+        if (
+            trek.city_ids &&
+            Array.isArray(trek.city_ids) &&
+            trek.city_ids.length > 0
+        ) {
+            cityDetails = await City.findAll({
+                where: { id: trek.city_ids },
+                include: [
+                    {
+                        model: State,
+                        as: "state",
+                        required: false,
+                    },
+                ],
+                attributes: ["id", "cityName", "isPopular"],
+            });
+        }
+
         const trekData = {
             ...trek.toJSON(),
             rating: trekRating.overall,
             ratingCount: trekRating.ratingCount,
             categoryRatings: trekRating.categories,
             activityDetails: activityDetails,
+            cityDetails: cityDetails,
         };
 
         res.json({
@@ -664,6 +682,88 @@ exports.getTrekBatches = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch trek batches",
+        });
+    }
+};
+
+// Vendor: Create batches for a trek
+exports.createBatches = async (req, res) => {
+    try {
+        console.log("🔍 Debug - createBatches called with:", req.body);
+        const { serviceDates, capacity } = req.body;
+        const trek_id = req.params.id; // Get trek_id from URL parameter
+        const vendorId = req.user.id;
+
+        if (!vendorId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Vendor account required.",
+            });
+        }
+
+        // Verify the trek belongs to this vendor
+        const trek = await Trek.findOne({
+            where: { id: trek_id, vendor_id: vendorId },
+        });
+
+        if (!trek) {
+            return res.status(404).json({
+                success: false,
+                message: "Trek not found or access denied.",
+            });
+        }
+
+        console.log("🔍 Debug - serviceDates:", serviceDates);
+        console.log("🔍 Debug - serviceDates type:", typeof serviceDates);
+        console.log(
+            "🔍 Debug - serviceDates isArray:",
+            Array.isArray(serviceDates)
+        );
+
+        if (
+            !serviceDates ||
+            !Array.isArray(serviceDates) ||
+            serviceDates.length === 0
+        ) {
+            console.log("🔍 Debug - Service dates validation failed");
+            return res.status(400).json({
+                success: false,
+                message: "Service dates are required.",
+            });
+        }
+
+        const durationDays = trek.duration_days || 1;
+        const batchCapacity = capacity || trek.max_participants || 20;
+
+        // Create batches for each service date
+        const createdBatches = [];
+        for (const startDate of serviceDates) {
+            // Calculate end date based on duration
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + durationDays - 1);
+
+            const batch = await Batch.create({
+                trek_id: trek_id,
+                start_date: startDate,
+                end_date: endDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
+                capacity: batchCapacity,
+                booked_slots: 0,
+                available_slots: batchCapacity,
+            });
+
+            createdBatches.push(batch);
+        }
+
+        res.json({
+            success: true,
+            message: `${createdBatches.length} batches created successfully`,
+            data: createdBatches,
+        });
+    } catch (error) {
+        console.error("Error creating batches:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create batches",
         });
     }
 };

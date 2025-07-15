@@ -14,6 +14,12 @@ module.exports = (sequelize, DataTypes) => {
             },
             url: { type: DataTypes.STRING, allowNull: false },
             caption: { type: DataTypes.STRING, allowNull: true },
+            is_cover: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+                comment: "Whether this image is the cover image for the trek",
+            },
         },
         {
             tableName: "trek_images",
