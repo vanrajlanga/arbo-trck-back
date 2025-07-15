@@ -10,6 +10,10 @@ const config = {
         database: process.env.DB_NAME || "aorbo_trekking",
         host: process.env.DB_HOST || "127.0.0.1",
         dialect: "mysql",
+        dialectOptions: {
+            charset: "utf8mb4",
+            collate: "utf8mb4_unicode_ci",
+        },
     },
     test: {
         username: process.env.DB_USER || "root",
@@ -17,6 +21,10 @@ const config = {
         database: process.env.DB_NAME_TEST || "arobo_test",
         host: process.env.DB_HOST || "127.0.0.1",
         dialect: "mysql",
+        dialectOptions: {
+            charset: "utf8mb4",
+            collate: "utf8mb4_unicode_ci",
+        },
     },
     production: {
         username: process.env.DB_USER,
@@ -24,6 +32,10 @@ const config = {
         database: process.env.DB_NAME || process.env.DB_NAME_PROD, // Use DB_NAME as fallback
         host: process.env.DB_HOST,
         dialect: "mysql",
+        dialectOptions: {
+            charset: "utf8mb4",
+            collate: "utf8mb4_unicode_ci",
+        },
         pool: {
             max: 5,
             min: 0,
